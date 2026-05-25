@@ -1301,7 +1301,6 @@ function recordUnderstandingHistory(domains, overall) {
     overall,
     domains: Object.fromEntries(domains.map((domain) => [domain.id, domain.percent]))
   });
-  world.history = world.history.slice(-80);
 }
 
 function renderUnderstandingGraph(domains, overall) {
@@ -1315,17 +1314,18 @@ function renderUnderstandingGraph(domains, overall) {
     { tick: 0, day: world.day, overall: 0, domains: Object.fromEntries(domains.map((domain) => [domain.id, 0])) },
     world.history[0] ?? { tick: world.tick, day: world.day, overall, domains: Object.fromEntries(domains.map((domain) => [domain.id, domain.percent])) }
   ];
-  const xFor = (index) => pad.left + (history.length === 1 ? plotW : (index / (history.length - 1)) * plotW);
+  const maxTick = Math.max(1, world.tick, ...history.map((entry) => entry.tick));
+  const xFor = (tick) => pad.left + (tick / maxTick) * plotW;
   const yFor = (value) => pad.top + plotH - (value / 100) * plotH;
   const grid = [0, 25, 50, 75, 100].map((value) => `
     <line x1="${pad.left}" y1="${yFor(value)}" x2="${width - pad.right}" y2="${yFor(value)}" stroke="#dfcea5" stroke-width="1" />
     <text x="6" y="${yFor(value) + 4}" fill="#7a6f80" font-size="10">${value}</text>
   `).join("");
   const paths = domains.map((domain) => {
-    const points = history.map((entry, index) => `${xFor(index)},${yFor(entry.domains[domain.id] ?? 0)}`).join(" ");
+    const points = history.map((entry) => `${xFor(entry.tick)},${yFor(entry.domains[domain.id] ?? 0)}`).join(" ");
     return `<polyline points="${points}" fill="none" stroke="${domain.color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />`;
   }).join("");
-  const overallPoints = history.map((entry, index) => `${xFor(index)},${yFor(entry.overall)}`).join(" ");
+  const overallPoints = history.map((entry) => `${xFor(entry.tick)},${yFor(entry.overall)}`).join(" ");
   const legend = domains.map((domain) => `
     <span class="legend-item"><span class="legend-swatch" style="background:${domain.color}"></span>${domain.name} ${domain.percent}%</span>
   `).join("");
@@ -1337,7 +1337,7 @@ function renderUnderstandingGraph(domains, overall) {
       <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}" stroke="#bfa66e" stroke-width="2" />
       ${paths}
       <polyline points="${overallPoints}" fill="none" stroke="#2c2740" stroke-width="2" stroke-dasharray="5 5" stroke-linejoin="round" stroke-linecap="round" />
-      <text x="${pad.left}" y="${height - 7}" fill="#7a6f80" font-size="11">Day ${history[0].day}</text>
+      <text x="${pad.left}" y="${height - 7}" fill="#7a6f80" font-size="11">0</text>
       <text x="${width - 62}" y="${height - 7}" fill="#7a6f80" font-size="11">Day ${world.day}</text>
     </svg>
     <div class="domain-legend">${legend}<span class="legend-item"><span class="legend-swatch" style="background:#2c2740"></span>Overall ${overall}%</span></div>
@@ -1405,9 +1405,17 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+function setInitialWorldScroll() {
+  const wrap = document.querySelector(".canvas-wrap");
+  if (!wrap) return;
+  wrap.scrollLeft = Math.max(0, 520 - wrap.clientWidth * 0.18);
+  wrap.scrollTop = Math.max(0, 180 - wrap.clientHeight * 0.12);
+}
+
 setWeather();
 addLog("The village woke inside a small green world and began asking why plants change.");
 agents.forEach(chooseTarget);
 renderHud();
 renderPanels();
+setInitialWorldScroll();
 loop();
