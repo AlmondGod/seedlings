@@ -203,13 +203,13 @@ canvas {
 
 .tree-canvas {
   position: relative;
-  min-width: 420px;
+  min-width: 610px;
 }
 
 .tree svg {
   position: absolute;
   inset: 0;
-  width: 420px;
+  width: 610px;
   pointer-events: none;
 }
 
@@ -251,6 +251,12 @@ canvas {
 
 .tree-node.hypothesis {
   border-color: #c8a25b;
+}
+
+.tree-node.locked {
+  border-color: #b9ad95;
+  background: #f3ead6;
+  color: #756b5c;
 }
 
 .tree-node .tags {

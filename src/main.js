@@ -44,10 +44,10 @@ const world = {
 const seasons = ["Sprout", "Cicada", "Maple", "Snowbell"];
 const weatherTypes = ["clear", "clear", "breezy", "rain", "rain", "mist"];
 const domainDefs = [
-  { id: "biology", name: "Biology", goal: 3, color: "#65a969" },
-  { id: "physics", name: "Physics", goal: 2, color: "#5d8edb" },
-  { id: "sociology", name: "Sociology", goal: 1, color: "#de8a4c" },
-  { id: "psychology", name: "Psychology", goal: 1, color: "#a27bc2" }
+  { id: "biology", name: "Biology", goal: 6, color: "#65a969" },
+  { id: "physics", name: "Physics", goal: 4, color: "#5d8edb" },
+  { id: "sociology", name: "Sociology", goal: 2, color: "#de8a4c" },
+  { id: "psychology", name: "Psychology", goal: 2, color: "#a27bc2" }
 ];
 
 const claimCatalog = [
@@ -57,7 +57,14 @@ const claimCatalog = [
   { claim: "Rain returns in seasonal clusters.", domain: "physics", parent: "physics", threshold: 0.78 },
   { claim: "River reeds grow near moving water.", domain: "biology", parent: "biology", threshold: 0.7 },
   { claim: "Mist gathers around ponds.", domain: "physics", parent: "physics", threshold: 0.72 },
-  { claim: "Shared observations improve predictions.", domain: "psychology", parent: "psychology", threshold: 0.76 }
+  { claim: "Shared observations improve predictions.", domain: "psychology", parent: "psychology", threshold: 0.76 },
+  { claim: "Rain predicts the next bluecap bloom patch.", domain: "biology", parent: "Bluecap blooms after rain.", threshold: 0.72 },
+  { claim: "Warm mornings predict sunbean harvest windows.", domain: "biology", parent: "Sunbean follows warm light.", threshold: 0.72 },
+  { claim: "Busy paths predict future puffroot spread.", domain: "sociology", parent: "Puffroot grows near crowded paths.", threshold: 0.72 },
+  { claim: "Season clusters forecast rain one morning ahead.", domain: "physics", parent: "Rain returns in seasonal clusters.", threshold: 0.82 },
+  { claim: "Pond mist predicts cooler morning fields.", domain: "physics", parent: "Mist gathers around ponds.", threshold: 0.78 },
+  { claim: "River speed predicts reed density.", domain: "biology", parent: "River reeds grow near moving water.", threshold: 0.76 },
+  { claim: "Accurate reports reduce listener prediction error.", domain: "psychology", parent: "Shared observations improve predictions.", threshold: 0.82 }
 ];
 
 function createBrain() {
@@ -319,6 +326,7 @@ function addEvidence(claim, amount, source) {
 function checkDiscovery(claim) {
   const item = claimCatalog.find((entry) => entry.claim === claim);
   if (!item || world.discoveries.includes(claim)) return;
+  if (!isClaimUnlocked(item)) return;
   const belief = aggregateBeliefs().find((entry) => entry.claim === claim);
   if (!belief || belief.confidence < item.threshold) return;
   world.discoveries.push(claim);
@@ -330,10 +338,17 @@ function checkDiscovery(claim) {
     text: item.domain.slice(0, 3),
     idea: claim
   });
+  for (const child of claimCatalog.filter((entry) => entry.parent === claim)) {
+    addEvidence(child.claim, 0.035, "derived from parent discovery");
+  }
 }
 
 function domainName(id) {
   return domainDefs.find((domain) => domain.id === id)?.name ?? id;
+}
+
+function isClaimUnlocked(item) {
+  return domainDefs.some((domain) => domain.id === item.parent) || world.discoveries.includes(item.parent);
 }
 
 function setWeather() {
@@ -1173,17 +1188,25 @@ function aggregateBeliefs() {
 
 function renderDiscoveryTree(beliefs, domains) {
   const rootX = 18;
-  const claimX = 190;
-  const rowHeight = 106;
+  const claimX = 168;
+  const childX = 390;
+  const rowHeight = 104;
+  const childHeight = 86;
   const edges = [];
   const nodes = [];
   let cursorY = 20;
 
   for (const domain of domainDefs) {
-    const domainClaims = beliefs
-      .filter((belief) => belief.domain === domain.id)
+    const rootClaims = beliefs
+      .filter((belief) => belief.domain === domain.id && belief.parent === domain.id)
       .sort((a, b) => claimCatalog.findIndex((item) => item.claim === a.claim) - claimCatalog.findIndex((item) => item.claim === b.claim));
-    const blockHeight = Math.max(rowHeight, domainClaims.length * rowHeight);
+    const claimBlocks = rootClaims.map((root) => {
+      const children = beliefs
+        .filter((belief) => belief.parent === root.claim)
+        .sort((a, b) => claimCatalog.findIndex((item) => item.claim === a.claim) - claimCatalog.findIndex((item) => item.claim === b.claim));
+      return { root, children, height: Math.max(rowHeight, children.length * childHeight) };
+    });
+    const blockHeight = Math.max(rowHeight, claimBlocks.reduce((sum, block) => sum + block.height, 0));
     const rootY = cursorY + blockHeight / 2 - 29;
     const domainProgress = domains.find((item) => item.id === domain.id);
 
@@ -1194,11 +1217,13 @@ function renderDiscoveryTree(beliefs, domains) {
       </article>
     `);
 
-    domainClaims.forEach((belief, index) => {
+    let blockY = cursorY;
+    for (const block of claimBlocks) {
+      const belief = block.root;
       const accepted = world.discoveries.includes(belief.claim);
-      const y = cursorY + index * rowHeight;
+      const y = blockY + block.height / 2 - 32;
       const edgeColor = accepted ? "#5d9b62" : "#c8a25b";
-      edges.push(`<path d="M ${rootX + 122} ${rootY + 29} C ${rootX + 152} ${rootY + 29}, ${claimX - 34} ${y + 29}, ${claimX} ${y + 29}" stroke="${edgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
+      edges.push(`<path d="M ${rootX + 122} ${rootY + 29} C ${rootX + 148} ${rootY + 29}, ${claimX - 32} ${y + 29}, ${claimX} ${y + 29}" stroke="${edgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
       nodes.push(`
         <article class="tree-node ${accepted ? "discovered" : "hypothesis"}" style="left:${claimX}px; top:${y}px">
           <strong>${accepted ? "Discovered" : "Hypothesis"}</strong>
@@ -1210,14 +1235,35 @@ function renderDiscoveryTree(beliefs, domains) {
           </div>
         </article>
       `);
-    });
+
+      block.children.forEach((child, childIndex) => {
+        const childAccepted = world.discoveries.includes(child.claim);
+        const unlocked = isClaimUnlocked(child);
+        const childY = blockY + childIndex * childHeight + 2;
+        const childEdgeColor = childAccepted ? "#5d9b62" : unlocked ? "#c8a25b" : "#b9ad95";
+        edges.push(`<path d="M ${claimX + 178} ${y + 29} C ${claimX + 210} ${y + 29}, ${childX - 34} ${childY + 29}, ${childX} ${childY + 29}" stroke="${childEdgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
+        nodes.push(`
+          <article class="tree-node ${childAccepted ? "discovered" : unlocked ? "hypothesis" : "locked"}" style="left:${childX}px; top:${childY}px">
+            <strong>${childAccepted ? "Discovered" : unlocked ? "Derived" : "Locked"}</strong>
+            <small>${child.claim}</small>
+            <div class="meter"><span style="width:${Math.round(child.confidence * 100)}%; background:${childAccepted ? "#65a969" : unlocked ? "#c9a96e" : "#aaa08c"}"></span></div>
+            <div class="tags">
+              <span class="tag">${Math.round(child.confidence * 100)}% conf</span>
+              <span class="tag">${Math.round(child.neural * 100)}% net</span>
+            </div>
+          </article>
+        `);
+      });
+
+      blockY += block.height;
+    }
 
     cursorY += blockHeight + 18;
   }
 
   return `
     <div class="tree-canvas" style="height:${cursorY + 20}px">
-      <svg viewBox="0 0 420 ${cursorY + 20}" style="height:${cursorY + 20}px" aria-hidden="true">
+      <svg viewBox="0 0 610 ${cursorY + 20}" style="height:${cursorY + 20}px" aria-hidden="true">
         ${edges.join("")}
       </svg>
       ${nodes.join("")}
