@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Little Theories</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="sim-stage" aria-label="Little Theories simulation">
+        <header class="topbar">
+          <div>
+            <h1>Little Theories</h1>
+            <p>A tiny society studying its own garden world.</p>
+          </div>
+          <div class="clock">
+            <span id="season">Sprout</span>
+            <strong id="day">Day 1</strong>
+            <span id="weather">clear</span>
+          </div>
+        </header>
+
+        <div class="canvas-wrap">
+          <canvas id="world" width="1920" height="1280" aria-label="Autonomous pixel village"></canvas>
+        </div>
+      </section>
+
+      <aside class="observer">
+        <section class="panel">
+          <div class="panel-title">
+            <span>World Understanding</span>
+            <small id="overall">0% charted</small>
+          </div>
+          <div id="domains" class="domains"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Discovery Tree</span>
+            <small>village science</small>
+          </div>
+          <div id="tree" class="tree"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Research Board</span>
+            <small id="consensus">forming first questions</small>
+          </div>
+          <div id="beliefs" class="beliefs"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Communication</span>
+            <small id="reward">0.00 reward</small>
+          </div>
+          <div id="communications" class="communications"></div>
+        </section>
+
+        <section class="panel log-panel">
+          <div class="panel-title">
+            <span>Village Chronicle</span>
+            <small>latest events</small>
+          </div>
+          <ol id="log" class="log"></ol>
+        </section>
+      </aside>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
