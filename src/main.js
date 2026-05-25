@@ -14,7 +14,6 @@ const ui = {
   communications: document.querySelector("#communications"),
   domains: document.querySelector("#domains"),
   tree: document.querySelector("#tree"),
-  log: document.querySelector("#log"),
   consensus: document.querySelector("#consensus"),
   overall: document.querySelector("#overall"),
   reward: document.querySelector("#reward")
@@ -37,6 +36,8 @@ const world = {
   log: [],
   discoveries: [],
   communications: [],
+  history: [],
+  lastHistoryTick: -1,
   reward: 0,
   predictions: 0
 };
@@ -1271,6 +1272,58 @@ function renderDiscoveryTree(beliefs, domains) {
   `;
 }
 
+function recordUnderstandingHistory(domains, overall) {
+  if (world.lastHistoryTick === world.tick) return;
+  world.lastHistoryTick = world.tick;
+  world.history.push({
+    tick: world.tick,
+    day: world.day,
+    overall,
+    domains: Object.fromEntries(domains.map((domain) => [domain.id, domain.percent]))
+  });
+  world.history = world.history.slice(-80);
+}
+
+function renderUnderstandingGraph(domains, overall) {
+  recordUnderstandingHistory(domains, overall);
+  const width = 620;
+  const height = 220;
+  const pad = { left: 34, right: 12, top: 14, bottom: 26 };
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+  const history = world.history.length > 1 ? world.history : [
+    { tick: 0, day: world.day, overall: 0, domains: Object.fromEntries(domains.map((domain) => [domain.id, 0])) },
+    world.history[0] ?? { tick: world.tick, day: world.day, overall, domains: Object.fromEntries(domains.map((domain) => [domain.id, domain.percent])) }
+  ];
+  const xFor = (index) => pad.left + (history.length === 1 ? plotW : (index / (history.length - 1)) * plotW);
+  const yFor = (value) => pad.top + plotH - (value / 100) * plotH;
+  const grid = [0, 25, 50, 75, 100].map((value) => `
+    <line x1="${pad.left}" y1="${yFor(value)}" x2="${width - pad.right}" y2="${yFor(value)}" stroke="#dfcea5" stroke-width="1" />
+    <text x="6" y="${yFor(value) + 4}" fill="#7a6f80" font-size="10">${value}</text>
+  `).join("");
+  const paths = domains.map((domain) => {
+    const points = history.map((entry, index) => `${xFor(index)},${yFor(entry.domains[domain.id] ?? 0)}`).join(" ");
+    return `<polyline points="${points}" fill="none" stroke="${domain.color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" />`;
+  }).join("");
+  const overallPoints = history.map((entry, index) => `${xFor(index)},${yFor(entry.overall)}`).join(" ");
+  const legend = domains.map((domain) => `
+    <span class="legend-item"><span class="legend-swatch" style="background:${domain.color}"></span>${domain.name} ${domain.percent}%</span>
+  `).join("");
+
+  return `
+    <svg class="understanding-graph" viewBox="0 0 ${width} ${height}" role="img" aria-label="World understanding over time">
+      ${grid}
+      <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${height - pad.bottom}" stroke="#bfa66e" stroke-width="2" />
+      <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}" stroke="#bfa66e" stroke-width="2" />
+      ${paths}
+      <polyline points="${overallPoints}" fill="none" stroke="#2c2740" stroke-width="2" stroke-dasharray="5 5" stroke-linejoin="round" stroke-linecap="round" />
+      <text x="${pad.left}" y="${height - 7}" fill="#7a6f80" font-size="11">Day ${history[0].day}</text>
+      <text x="${width - 62}" y="${height - 7}" fill="#7a6f80" font-size="11">Day ${world.day}</text>
+    </svg>
+    <div class="domain-legend">${legend}<span class="legend-item"><span class="legend-swatch" style="background:#2c2740"></span>Overall ${overall}%</span></div>
+  `;
+}
+
 function renderPanels() {
   const beliefs = aggregateBeliefs();
   const domains = domainDefs.map((domain) => {
@@ -1283,15 +1336,7 @@ function renderPanels() {
   const overall = Math.round(domains.reduce((sum, domain) => sum + domain.percent, 0) / domains.length);
 
   ui.overall.textContent = `${overall}% charted`;
-  ui.domains.innerHTML = domains.map((domain) => `
-    <article class="domain">
-      <div class="domain-head">
-        <strong>${domain.name}</strong>
-        <span>${domain.accepted}/${domain.goal} discoveries</span>
-      </div>
-      <div class="meter"><span style="width:${domain.percent}%; background:${domain.color}"></span></div>
-    </article>
-  `).join("");
+  ui.domains.innerHTML = renderUnderstandingGraph(domains, overall);
 
   ui.tree.innerHTML = renderDiscoveryTree(beliefs, domains);
 
@@ -1322,7 +1367,6 @@ function renderPanels() {
     </article>
   `).join("");
 
-  ui.log.innerHTML = world.log.map((item) => `<li>${item}</li>`).join("");
   const top = beliefs[0];
   ui.consensus.textContent = top ? `${Math.round(top.confidence * 100)}%: ${top.claim}` : "forming first questions";
 }
