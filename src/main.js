@@ -1408,8 +1408,8 @@ function loop() {
 function setInitialWorldScroll() {
   const wrap = document.querySelector(".canvas-wrap");
   if (!wrap) return;
-  wrap.scrollLeft = Math.max(0, 520 - wrap.clientWidth * 0.18);
-  wrap.scrollTop = Math.max(0, 180 - wrap.clientHeight * 0.12);
+  wrap.scrollLeft = Math.max(0, 420 - wrap.clientWidth * 0.08);
+  wrap.scrollTop = Math.max(0, 250 - wrap.clientHeight * 0.08);
 }
 
 setWeather();
@@ -1417,5 +1417,6 @@ addLog("The village woke inside a small green world and began asking why plants 
 agents.forEach(chooseTarget);
 renderHud();
 renderPanels();
+draw();
 setInitialWorldScroll();
 loop();
