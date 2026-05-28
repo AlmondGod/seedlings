@@ -35,6 +35,9 @@ const world = {
   nextWeatherTick: 0,
   log: [],
   discoveries: [],
+  observations: [],
+  ruleStats: new Map(),
+  minedRules: [],
   communications: [],
   history: [],
   lastHistoryTick: -1,
@@ -44,28 +47,20 @@ const world = {
 
 const seasons = ["Sprout", "Cicada", "Maple", "Snowbell"];
 const weatherTypes = ["clear", "clear", "breezy", "rain", "rain", "mist"];
-const domainDefs = [
-  { id: "biology", name: "Biology", goal: 6, color: "#65a969" },
-  { id: "physics", name: "Physics", goal: 4, color: "#5d8edb" },
-  { id: "sociology", name: "Sociology", goal: 2, color: "#de8a4c" },
-  { id: "psychology", name: "Psychology", goal: 2, color: "#a27bc2" }
-];
+const clusterPalette = ["#65a969", "#5d8edb", "#de8a4c", "#a27bc2", "#d45f73", "#d8b34d"];
+const predictorPool = {
+  bluecap: ["weather=rain", "weather=mist", "terrain=garden", "nearWater=true"],
+  sunbean: ["weather=clear", "season=Cicada", "terrain=garden", "terrain=plaza"],
+  puffroot: ["terrain=path", "terrain=plaza", "crowded=true", "nearBuilding=true"]
+};
 
-const claimCatalog = [
-  { claim: "Bluecap blooms after rain.", domain: "biology", parent: "biology", threshold: 0.62 },
-  { claim: "Sunbean follows warm light.", domain: "biology", parent: "biology", threshold: 0.62 },
-  { claim: "Puffroot grows near crowded paths.", domain: "sociology", parent: "sociology", threshold: 0.62 },
-  { claim: "Rain returns in seasonal clusters.", domain: "physics", parent: "physics", threshold: 0.78 },
-  { claim: "River reeds grow near moving water.", domain: "biology", parent: "biology", threshold: 0.7 },
-  { claim: "Mist gathers around ponds.", domain: "physics", parent: "physics", threshold: 0.72 },
-  { claim: "Shared observations improve predictions.", domain: "psychology", parent: "psychology", threshold: 0.76 },
-  { claim: "Rain predicts the next bluecap bloom patch.", domain: "biology", parent: "Bluecap blooms after rain.", threshold: 0.72 },
-  { claim: "Warm mornings predict sunbean harvest windows.", domain: "biology", parent: "Sunbean follows warm light.", threshold: 0.72 },
-  { claim: "Busy paths predict future puffroot spread.", domain: "sociology", parent: "Puffroot grows near crowded paths.", threshold: 0.72 },
-  { claim: "Season clusters forecast rain one morning ahead.", domain: "physics", parent: "Rain returns in seasonal clusters.", threshold: 0.82 },
-  { claim: "Pond mist predicts cooler morning fields.", domain: "physics", parent: "Mist gathers around ponds.", threshold: 0.78 },
-  { claim: "River speed predicts reed density.", domain: "biology", parent: "River reeds grow near moving water.", threshold: 0.76 },
-  { claim: "Accurate reports reduce listener prediction error.", domain: "psychology", parent: "Shared observations improve predictions.", threshold: 0.82 }
+const hiddenRules = Object.fromEntries(
+  Object.entries(predictorPool).map(([species, predictors]) => [species, pick(predictors)])
+);
+
+const outcomeDefs = [
+  { id: "bloom", label: "plant bloom", color: "#65a969" },
+  { id: "social", label: "listener prediction gain", color: "#a27bc2" }
 ];
 
 function createBrain() {
@@ -110,28 +105,54 @@ function trainBrain(brain, inputs, target, rate = 0.18) {
 }
 
 function observationFeatures(plant) {
-  const terrainType = terrain[Math.floor(plant.y / tile)]?.[Math.floor(plant.x / tile)];
+  const facts = plantFacts(plant);
   const hour = (world.tick % 1440) / 1440;
   return [
-    plant.species === "bluecap" ? 1 : 0,
-    plant.species === "sunbean" ? 1 : 0,
-    plant.species === "puffroot" ? 1 : 0,
-    world.weather === "rain" ? 1 : 0,
-    world.weather === "clear" ? 1 : 0,
-    world.weather === "mist" ? 1 : 0,
-    terrainType === "path" || terrainType === "plaza" ? 1 : 0,
-    terrainType === "garden" ? 1 : 0,
-    plant.bloom ? 1 : 0,
+    facts.includes("species=bluecap") ? 1 : 0,
+    facts.includes("species=sunbean") ? 1 : 0,
+    facts.includes("species=puffroot") ? 1 : 0,
+    facts.includes("weather=rain") ? 1 : 0,
+    facts.includes("weather=clear") ? 1 : 0,
+    facts.includes("weather=mist") ? 1 : 0,
+    facts.includes("terrain=path") || facts.includes("terrain=plaza") ? 1 : 0,
+    facts.includes("terrain=garden") ? 1 : 0,
+    facts.includes("nearWater=true") ? 1 : 0,
     hour
   ];
 }
 
-function conceptFeatures(claim) {
-  const index = claimCatalog.findIndex((item) => item.claim === claim);
+function conceptFeatures(seed) {
+  const index = Math.abs(hashString(seed)) % neuralInputs;
   return Array.from({ length: neuralInputs }, (_, inputIndex) => {
-    if (inputIndex === index % neuralInputs) return 1;
+    if (inputIndex === index) return 1;
     if (inputIndex === 9) return (world.tick % 1440) / 1440;
     return 0;
+  });
+}
+
+function hashString(text) {
+  return [...text].reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 0);
+}
+
+function plantFacts(plant) {
+  const terrainType = terrain[Math.floor(plant.y / tile)]?.[Math.floor(plant.x / tile)] ?? "unknown";
+  const nearbyAgents = agents?.filter((agent) => distance(agent, plant) < 80).length ?? 0;
+  return [
+    `species=${plant.species}`,
+    `weather=${world.weather}`,
+    `terrain=${terrainType}`,
+    `season=${seasons[world.seasonIndex]}`,
+    `nearWater=${["river", "pond"].includes(terrainType)}`,
+    `crowded=${nearbyAgents >= 3}`,
+    `nearBuilding=${isNearBuilding(plant.x, plant.y)}`
+  ];
+}
+
+function isNearBuilding(x, y) {
+  return [...houses, ...landmarks].some((site) => {
+    const cx = (site.x + site.w / 2) * tile;
+    const cy = (site.y + site.h / 2) * tile;
+    return Math.hypot(cx - x, cy - y) < 120;
   });
 }
 
@@ -276,14 +297,25 @@ const agents = [
   speechUntil: 0,
   notebook: [],
   memory: [],
-  beliefs: claimCatalog.map((item, beliefIndex) => ({
-    ...item,
-    confidence: beliefIndex < 3 ? rand(0.08, 0.24) : rand(0.02, 0.1),
+  models: Object.fromEntries(outcomeDefs.map((outcome) => [outcome.id, {
+    ...outcome,
+    confidence: rand(0.08, 0.18),
     evidence: 0,
     source: "hunch",
     brain: createBrain(),
     neural: 0.5
-  })),
+  }])),
+  policy: {
+    observing: rand(0.8, 1.25),
+    talking: rand(0.65, 1.05),
+    researching: rand(0.45, 0.85),
+    wandering: rand(0.45, 0.9)
+  },
+  memoryPolicy: {
+    writeThreshold: rand(0.35, 0.7),
+    readBias: rand(0.1, 0.35)
+  },
+  lastAction: "wandering",
   outfit: index % 3 === 0 ? "blue" : "plain",
   homeCharm: 0
 }));
@@ -330,55 +362,137 @@ function addPredictionReward(prediction, target) {
   return reward;
 }
 
-function addEvidence(claim, amount, source) {
-  const inputs = conceptFeatures(claim);
-  for (const agent of agents) {
-    const belief = agent.beliefs.find((item) => item.claim === claim);
-    if (!belief) continue;
-    const prediction = trainBrain(belief.brain, inputs, 1, 0.1);
-    belief.neural = prediction;
-    belief.evidence += 1;
-    belief.confidence = clamp(belief.confidence * 0.72 + prediction * 0.22 + amount * rand(0.7, 1.25), 0, 0.98);
-    belief.source = source;
+function recordObservation(agent, outcome, facts, prediction, target, source = "field") {
+  const reward = addPredictionReward(prediction, target);
+  const record = { tick: world.tick, day: world.day, agent: agent.name, outcome, facts, prediction, target, reward, source };
+  world.observations.push(record);
+  world.observations = world.observations.slice(-2500);
+  if (outcome === "bloom") {
+    for (const fact of facts) updateRuleStat(fact, outcome, target);
+    mineRules();
   }
-  checkDiscovery(claim);
+  remember(agent, { type: "observation", outcome, facts: facts.slice(0, 4), prediction, target, reward });
+  updatePolicy(agent, reward);
+  return reward;
 }
 
-function checkDiscovery(claim) {
-  const item = claimCatalog.find((entry) => entry.claim === claim);
-  if (!item || world.discoveries.includes(claim)) return;
-  if (!isClaimUnlocked(item)) return;
-  const belief = aggregateBeliefs().find((entry) => entry.claim === claim);
-  if (!belief || belief.confidence < item.threshold) return;
-  world.discoveries.push(claim);
-  addLog(`The village accepted a new ${domainName(item.domain).toLowerCase()} discovery: ${claim}`);
-  artifacts.push({
-    type: "note",
-    x: rand(22.5, 27.4) * tile,
-    y: rand(12.2, 17) * tile,
-    text: item.domain.slice(0, 3),
-    idea: claim
-  });
-  for (const child of claimCatalog.filter((entry) => entry.parent === claim)) {
-    addEvidence(child.claim, 0.035, "derived from parent discovery");
+function updateRuleStat(feature, outcome, target) {
+  const key = `${feature}->${outcome}`;
+  const stat = world.ruleStats.get(key) ?? { feature, outcome, seen: 0, hits: 0, absentSeen: 0, absentHits: 0 };
+  stat.seen += 1;
+  stat.hits += target ? 1 : 0;
+  world.ruleStats.set(key, stat);
+
+  for (const otherKey of world.ruleStats.keys()) {
+    const other = world.ruleStats.get(otherKey);
+    if (other.outcome === outcome && other.feature !== feature) {
+      other.absentSeen += 1;
+      other.absentHits += target ? 1 : 0;
+    }
   }
 }
 
-function domainName(id) {
-  return domainDefs.find((domain) => domain.id === id)?.name ?? id;
+function mineRules() {
+  const mined = [];
+  for (const stat of world.ruleStats.values()) {
+    if (stat.feature.startsWith("heard=")) continue;
+    if (stat.seen < 8) continue;
+    const p = stat.hits / stat.seen;
+    const base = stat.absentSeen ? stat.absentHits / stat.absentSeen : 0.5;
+    const lift = p - base;
+    const confidence = clamp(0.4 * p + 0.6 * Math.max(0, lift), 0, 1);
+    if (lift > 0.22 && p > 0.58) {
+      mined.push({
+        id: `${stat.feature}->${stat.outcome}`,
+        feature: stat.feature,
+        outcome: stat.outcome,
+        claim: `${labelFeature(stat.feature)} predicts ${labelOutcome(stat.outcome)}.`,
+        cluster: clusterForFeature(stat.feature),
+        confidence,
+        neural: p,
+        evidence: stat.seen,
+        lift,
+        parent: stat.feature.split("=")[0]
+      });
+    }
+  }
+  world.minedRules = mined.sort((a, b) => b.confidence - a.confidence).slice(0, 18);
+  for (const rule of world.minedRules) {
+    if (rule.confidence > 0.62 && !world.discoveries.includes(rule.id)) {
+      world.discoveries.push(rule.id);
+      addLog(`A rule emerged: ${rule.claim}`);
+      artifacts.push({
+        type: "note",
+        x: rand(22.5, 27.4) * tile,
+        y: rand(12.2, 17) * tile,
+        text: rule.cluster.slice(0, 3),
+        idea: rule.claim
+      });
+    }
+  }
 }
 
-function isClaimUnlocked(item) {
-  return domainDefs.some((domain) => domain.id === item.parent) || world.discoveries.includes(item.parent);
+function labelFeature(feature) {
+  return feature
+    .replace("species=", "")
+    .replace("weather=", "")
+    .replace("terrain=", "")
+    .replace("season=", "")
+    .replace("nearWater=true", "water adjacency")
+    .replace("crowded=true", "crowding")
+    .replace("nearBuilding=true", "building proximity");
+}
+
+function labelOutcome(outcome) {
+  return outcomeDefs.find((item) => item.id === outcome)?.label ?? outcome;
+}
+
+function clusterForFeature(feature) {
+  if (feature.startsWith("species=") || feature === "terrain=garden" || feature === "nearWater=true") return "ecology";
+  if (feature.startsWith("weather=") || feature.startsWith("season=") || feature.includes("water")) return "weather";
+  if (feature.includes("crowded") || feature.includes("Building") || feature.includes("building") || feature.includes("plaza") || feature.includes("path")) return "social space";
+  return "prediction";
+}
+
+function titleCase(text) {
+  return text.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function hiddenRuleMatchesPlant(plant) {
+  return plantFacts(plant).includes(hiddenRules[plant.species]);
+}
+
+function updatePolicy(agent, reward) {
+  const key = agent.lastAction ?? "wandering";
+  agent.policy[key] = clamp(agent.policy[key] * 0.96 + reward * 0.12, 0.08, 2.4);
+  if (agent.memory.length) {
+    agent.memoryPolicy.writeThreshold = clamp(agent.memoryPolicy.writeThreshold + (reward > 0.65 ? 0.005 : -0.01), 0.2, 0.85);
+    agent.memoryPolicy.readBias = clamp(agent.memoryPolicy.readBias + (reward > 0.6 ? 0.004 : -0.006), 0.02, 0.6);
+  }
 }
 
 function setWeather() {
   world.weather = pick(weatherTypes);
   world.nextWeatherTick = world.tick + 720;
   if (world.weather === "rain") {
-    addLog("Rain softened the garden. The villagers began watching bluecap closely.");
-    addEvidence("Rain returns in seasonal clusters.", 0.025, "weather diary");
+    addLog("Rain softened the garden. The villagers began watching which plants respond.");
   }
+}
+
+function chooseWeightedAction(agent) {
+  const weights = {
+    observing: agent.policy.observing,
+    talking: agent.policy.talking + agent.memoryPolicy.readBias,
+    researching: agent.policy.researching,
+    wandering: agent.policy.wandering
+  };
+  const total = Object.values(weights).reduce((sum, value) => sum + value, 0);
+  let roll = Math.random() * total;
+  for (const [action, weight] of Object.entries(weights)) {
+    roll -= weight;
+    if (roll <= 0) return action;
+  }
+  return "wandering";
 }
 
 function chooseTarget(agent) {
@@ -389,14 +503,15 @@ function chooseTarget(agent) {
     return;
   }
 
-  const roll = Math.random();
-  if (roll < 0.38) {
+  const action = chooseWeightedAction(agent);
+  agent.lastAction = action;
+  if (action === "observing") {
     const plant = pick(plants);
     setTarget(agent, plant.x + rand(-16, 16), plant.y + rand(-16, 16), "observing plants");
-  } else if (roll < 0.56) {
+  } else if (action === "researching") {
     const site = pick(landmarks.filter((landmark) => ["lab", "archive", "townHall", "observatory"].includes(landmark.type)));
     setTarget(agent, (site.x + site.w / 2) * tile, (site.y + site.h + 0.35) * tile, "writing theory");
-  } else if (roll < 0.78) {
+  } else if (action === "talking") {
     const friend = pick(agents.filter((a) => a !== agent));
     setTarget(agent, friend.x + rand(-28, 28), friend.y + rand(-28, 28), "seeking talk");
   } else {
@@ -513,49 +628,22 @@ function observe(agent) {
   const plant = plants.find((p) => distance(agent, p) < 42);
   if (!plant) return;
 
-  const belief = agent.beliefs.find((b) => b.claim.includes(
-    plant.species === "bluecap" ? "Bluecap" : plant.species === "sunbean" ? "Sunbean" : "Puffroot"
-  ));
-  if (!belief) return;
-
-  const matchesRule =
-    (plant.species === "bluecap" && world.weather === "rain") ||
-    (plant.species === "sunbean" && world.weather === "clear") ||
-    (plant.species === "puffroot" && ["path", "plaza"].includes(terrain[Math.floor(plant.y / tile)]?.[Math.floor(plant.x / tile)]));
+  const facts = plantFacts(plant);
+  const model = agent.models.bloom;
   const inputs = observationFeatures(plant);
-  const target = matchesRule ? 1 : 0;
-  const prediction = trainBrain(belief.brain, inputs, target);
+  const target = plant.bloom ? 1 : 0;
+  const prediction = trainBrain(model.brain, inputs, target);
+  model.evidence += 1;
+  model.neural = prediction;
+  model.confidence = clamp(model.confidence * 0.78 + prediction * 0.16 + target * 0.05, 0, 0.98);
+  model.source = "field note";
+  const reward = recordObservation(agent, "bloom", facts, prediction, target);
 
-  belief.evidence += 1;
-  belief.neural = prediction;
-  belief.confidence = clamp(belief.confidence * 0.64 + prediction * 0.32 + (matchesRule ? 0.08 : 0.012), 0, 0.98);
-  belief.source = "field note";
-  const reward = addPredictionReward(prediction, target);
-  agent.notebook.unshift(`${plant.species} ${matchesRule ? "matched" : "confused"} ${world.weather} (${Math.round(prediction * 100)}%)`);
+  agent.notebook.unshift(`${plant.species} ${plant.bloom ? "bloomed" : "waited"} ${world.weather} (${Math.round(prediction * 100)}%)`);
   agent.notebook = agent.notebook.slice(0, 6);
-  remember(agent, {
-    type: "observation",
-    claim: belief.claim,
-    prediction,
-    target,
-    reward,
-    place: terrain[Math.floor(agent.y / tile)]?.[Math.floor(agent.x / tile)] ?? "unknown"
-  });
 
-  if (matchesRule && Math.random() < 0.24) {
-    speak(agent, pick(["I saw it!", "field note!", "tiny proof!", "hmm!"]));
-  }
-
-  if (belief.confidence > belief.threshold && !world.discoveries.includes(belief.claim)) {
-    world.discoveries.push(belief.claim);
-    addLog(`${agent.name} proposed a ${domainName(belief.domain).toLowerCase()} discovery: ${belief.claim}`);
-    artifacts.push({
-      type: "note",
-      x: rand(22.5, 27.4) * tile,
-      y: rand(12.2, 17) * tile,
-      text: plant.species.slice(0, 4),
-      idea: belief.claim
-    });
+  if (Math.abs(target - prediction) > agent.memoryPolicy.writeThreshold && Math.random() < 0.36) {
+    speak(agent, pick(["field note!", "odd result!", "tiny proof!", "hmm!"]));
   }
 }
 
@@ -565,23 +653,47 @@ function talk() {
     const b = agents.find((candidate) => candidate !== a && distance(a, candidate) < 44);
     if (!b) continue;
 
-    const belief = pick(a.beliefs);
-    const other = b.beliefs.find((item) => item.claim === belief.claim);
+    const rule = world.minedRules.find((item) => item.outcome === "bloom" && world.discoveries.includes(item.id)) ??
+      world.minedRules.find((item) => item.outcome === "bloom") ??
+      world.minedRules.find((item) => world.discoveries.includes(item.id)) ??
+      world.minedRules[0];
+    const memory = a.memory.find((item) => item.type === "observation");
+    const symbol = rule ? compactRule(rule) : compactMemory(memory);
+    const confidence = rule?.confidence ?? (memory ? memory.reward : 0.5);
+    const model = b.models.social;
     const trust = 0.024 + (a.role === "teacher" || b.role === "child" ? 0.026 : 0);
-    const socialPrediction = trainBrain(other.brain, conceptFeatures(belief.claim), belief.confidence, 0.07);
-    other.neural = socialPrediction;
-    const before = other.confidence;
-    other.confidence = clamp(other.confidence * 0.86 + socialPrediction * 0.1 + belief.confidence * trust, 0, 0.98);
-    other.source = a.name;
-    other.evidence += 1;
-    const delta = other.confidence - before;
-    addCommunication(a, b, belief, delta);
-    remember(a, { type: "said", claim: belief.claim, to: b.name, confidence: belief.confidence });
-    remember(b, { type: "heard", claim: belief.claim, from: a.name, confidence: belief.confidence, delta });
-    addEvidence("Shared observations improve predictions.", Math.max(0.002, delta * 0.08), "communication");
-    speak(a, belief.claim.split(" ").slice(0, 3).join(" ") + "?");
-    checkDiscovery(belief.claim);
+    const target = confidence > 0.58 ? 1 : 0;
+    const socialPrediction = trainBrain(model.brain, conceptFeatures(symbol), target, 0.07);
+    const before = model.confidence;
+    model.neural = socialPrediction;
+    model.confidence = clamp(model.confidence * 0.84 + socialPrediction * 0.1 + confidence * trust, 0, 0.98);
+    model.source = a.name;
+    model.evidence += 1;
+    const delta = model.confidence - before;
+    recordObservation(b, "social", [`speaker=${a.role}`, `place=${terrain[Math.floor(b.y / tile)]?.[Math.floor(b.x / tile)] ?? "unknown"}`], socialPrediction, target, "communication");
+    addCommunication(a, b, { claim: symbol, confidence }, delta);
+    remember(a, { type: "said", claim: symbol, to: b.name, confidence });
+    remember(b, { type: "heard", claim: symbol, from: a.name, confidence, delta });
+    speak(a, `${symbol}?`);
   }
+}
+
+function compactRule(rule) {
+  const feature = rule.feature
+    .replace("weather=", "w:")
+    .replace("terrain=", "t:")
+    .replace("species=", "s:")
+    .replace("season=", "se:")
+    .replace("nearWater=true", "water")
+    .replace("crowded=true", "crowd")
+    .replace("nearBuilding=true", "house");
+  return `${feature}->${rule.outcome}`;
+}
+
+function compactMemory(memory) {
+  if (!memory) return "notebook?";
+  const cue = memory.facts?.[0]?.replace("species=", "s:") ?? "note";
+  return `${cue}->${memory.outcome ?? "world"}`;
 }
 
 function speak(agent, text) {
@@ -592,11 +704,7 @@ function speak(agent, text) {
 function updatePlants() {
   if (world.tick % 50 !== 0) return;
   for (const plant of plants) {
-    const boost =
-      (plant.species === "bluecap" && world.weather === "rain") ||
-      (plant.species === "sunbean" && world.weather === "clear")
-        ? 0.05
-        : 0.015;
+    const boost = hiddenRuleMatchesPlant(plant) ? 0.055 : 0.012;
     plant.age = clamp(plant.age + boost, 0, 1);
     plant.bloom = plant.age > 0.68;
     if (plant.age >= 1 && Math.random() < 0.12) plant.age = rand(0.18, 0.42);
@@ -1193,90 +1301,153 @@ function draw() {
 }
 
 function aggregateBeliefs() {
-  return claimCatalog.map((catalogItem) => {
-    const claim = catalogItem.claim;
-    const entries = agents.map((agent) => agent.beliefs.find((b) => b.claim === claim));
+  if (world.minedRules.length) {
+    return world.minedRules.map((rule) => ({
+      id: rule.id,
+      claim: rule.claim,
+      domain: rule.cluster,
+      parent: rule.parent,
+      confidence: rule.confidence,
+      neural: rule.neural,
+      evidence: rule.evidence,
+      sources: [labelFeature(rule.feature), labelOutcome(rule.outcome)],
+      feature: rule.feature,
+      outcome: rule.outcome,
+      lift: rule.lift
+    })).sort((a, b) => b.confidence - a.confidence);
+  }
+
+  const candidates = [...world.ruleStats.values()]
+    .filter((stat) => stat.seen >= 2)
+    .map((stat) => {
+      const p = stat.hits / stat.seen;
+      const base = stat.absentSeen ? stat.absentHits / stat.absentSeen : 0.5;
+      return {
+        id: `${stat.feature}->${stat.outcome}`,
+        claim: `${labelFeature(stat.feature)} may predict ${labelOutcome(stat.outcome)}.`,
+        domain: clusterForFeature(stat.feature),
+        parent: stat.feature.split("=")[0],
+        confidence: clamp(0.22 + Math.max(0, p - base), 0, 0.58),
+        neural: p,
+        evidence: stat.seen,
+        sources: ["early notes"],
+        feature: stat.feature,
+        outcome: stat.outcome,
+        lift: p - base
+      };
+    })
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 10);
+
+  if (candidates.length) return candidates;
+
+  return outcomeDefs.map((outcome, index) => {
+    const models = agents.map((agent) => agent.models[outcome.id]);
     return {
-      ...catalogItem,
-      claim,
-      confidence: entries.reduce((sum, item) => sum + item.confidence, 0) / entries.length,
-      neural: entries.reduce((sum, item) => sum + item.neural, 0) / entries.length,
-      evidence: entries.reduce((sum, item) => sum + item.evidence, 0),
-      sources: [...new Set(entries.map((item) => item.source))].slice(0, 3)
+      id: `seed-${outcome.id}`,
+      claim: `Agents are gathering first ${outcome.label} predictions.`,
+      domain: index === 0 ? "ecology" : "communication",
+      parent: "seed",
+      confidence: models.reduce((sum, model) => sum + model.confidence, 0) / models.length,
+      neural: models.reduce((sum, model) => sum + model.neural, 0) / models.length,
+      evidence: models.reduce((sum, model) => sum + model.evidence, 0),
+      sources: ["unclustered"],
+      feature: "seed",
+      outcome: outcome.id,
+      lift: 0
     };
-  }).sort((a, b) => b.confidence - a.confidence);
+  });
+}
+
+function dynamicDomains(beliefs) {
+  const ids = [...new Set(beliefs.map((belief) => belief.domain))];
+  const fallback = ids.length ? ids : ["ecology", "weather", "social space", "communication"];
+  return fallback.map((id, index) => {
+    const claims = beliefs.filter((belief) => belief.domain === id);
+    const accepted = claims.filter((belief) => world.discoveries.includes(belief.id)).length;
+    const confidence = claims.length ? claims.reduce((sum, belief) => sum + belief.confidence, 0) / claims.length : 0;
+    const evidence = claims.reduce((sum, belief) => sum + belief.evidence, 0);
+    const percent = Math.round(clamp(confidence * 72 + accepted * 12 + Math.min(evidence, 60) * 0.32, 0, 100));
+    return {
+      id,
+      name: titleCase(id),
+      color: clusterPalette[index % clusterPalette.length],
+      accepted,
+      confidence,
+      evidence,
+      goal: Math.max(1, claims.length),
+      percent
+    };
+  });
 }
 
 function renderDiscoveryTree(beliefs, domains) {
   const rootX = 18;
-  const claimX = 168;
-  const childX = 390;
-  const rowHeight = 104;
-  const childHeight = 86;
+  const groupX = 168;
+  const ruleX = 390;
+  const rowHeight = 96;
+  const ruleHeight = 82;
   const edges = [];
   const nodes = [];
   let cursorY = 20;
 
-  for (const domain of domainDefs) {
-    const rootClaims = beliefs
-      .filter((belief) => belief.domain === domain.id && belief.parent === domain.id)
-      .sort((a, b) => claimCatalog.findIndex((item) => item.claim === a.claim) - claimCatalog.findIndex((item) => item.claim === b.claim));
-    const claimBlocks = rootClaims.map((root) => {
-      const children = beliefs
-        .filter((belief) => belief.parent === root.claim)
-        .sort((a, b) => claimCatalog.findIndex((item) => item.claim === a.claim) - claimCatalog.findIndex((item) => item.claim === b.claim));
-      return { root, children, height: Math.max(rowHeight, children.length * childHeight) };
-    });
-    const blockHeight = Math.max(rowHeight, claimBlocks.reduce((sum, block) => sum + block.height, 0));
+  for (const domain of domains) {
+    const domainRules = beliefs.filter((belief) => belief.domain === domain.id);
+    const groups = [...new Set(domainRules.map((belief) => belief.parent ?? "pattern"))]
+      .map((parent) => {
+        const rules = domainRules
+          .filter((belief) => (belief.parent ?? "pattern") === parent)
+          .sort((a, b) => b.confidence - a.confidence);
+        return { parent, rules, height: Math.max(rowHeight, rules.length * ruleHeight) };
+      });
+    const blockHeight = Math.max(rowHeight, groups.reduce((sum, block) => sum + block.height, 0));
     const rootY = cursorY + blockHeight / 2 - 29;
-    const domainProgress = domains.find((item) => item.id === domain.id);
 
     nodes.push(`
       <article class="tree-node root" style="left:${rootX}px; top:${rootY}px">
         <strong>${domain.name}</strong>
-        <div class="tags"><span class="tag">${domainProgress.percent}%</span></div>
+        <div class="tags"><span class="tag">${domain.percent}%</span></div>
       </article>
     `);
 
     let blockY = cursorY;
-    for (const block of claimBlocks) {
-      const belief = block.root;
-      const accepted = world.discoveries.includes(belief.claim);
-      const y = blockY + block.height / 2 - 32;
-      const edgeColor = accepted ? "#5d9b62" : "#c8a25b";
-      edges.push(`<path d="M ${rootX + 122} ${rootY + 29} C ${rootX + 148} ${rootY + 29}, ${claimX - 32} ${y + 29}, ${claimX} ${y + 29}" stroke="${edgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
+    for (const group of groups) {
+      const y = blockY + group.height / 2 - 32;
+      const topRule = group.rules[0];
+      const groupAccepted = group.rules.some((rule) => world.discoveries.includes(rule.id));
+      const edgeColor = groupAccepted ? "#5d9b62" : "#c8a25b";
+      edges.push(`<path d="M ${rootX + 122} ${rootY + 29} C ${rootX + 148} ${rootY + 29}, ${groupX - 32} ${y + 29}, ${groupX} ${y + 29}" stroke="${edgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
       nodes.push(`
-        <article class="tree-node ${accepted ? "discovered" : "hypothesis"}" style="left:${claimX}px; top:${y}px">
-          <strong>${accepted ? "Discovered" : "Hypothesis"}</strong>
-          <small>${belief.claim}</small>
-          <div class="meter"><span style="width:${Math.round(belief.confidence * 100)}%; background:${accepted ? "#65a969" : "#c9a96e"}"></span></div>
+        <article class="tree-node ${groupAccepted ? "discovered" : "hypothesis"}" style="left:${groupX}px; top:${y}px">
+          <strong>${titleCase(group.parent)}</strong>
+          <small>${group.rules.length} pattern${group.rules.length === 1 ? "" : "s"} under test</small>
+          <div class="meter"><span style="width:${Math.round((topRule?.confidence ?? 0) * 100)}%; background:${groupAccepted ? "#65a969" : "#c9a96e"}"></span></div>
           <div class="tags">
-            <span class="tag">${Math.round(belief.confidence * 100)}% conf</span>
-            <span class="tag">${Math.round(belief.neural * 100)}% net</span>
+            <span class="tag">${Math.round((topRule?.confidence ?? 0) * 100)}% conf</span>
+            <span class="tag">${group.rules.reduce((sum, rule) => sum + rule.evidence, 0)} notes</span>
           </div>
         </article>
       `);
 
-      block.children.forEach((child, childIndex) => {
-        const childAccepted = world.discoveries.includes(child.claim);
-        const unlocked = isClaimUnlocked(child);
-        const childY = blockY + childIndex * childHeight + 2;
-        const childEdgeColor = childAccepted ? "#5d9b62" : unlocked ? "#c8a25b" : "#b9ad95";
-        edges.push(`<path d="M ${claimX + 178} ${y + 29} C ${claimX + 210} ${y + 29}, ${childX - 34} ${childY + 29}, ${childX} ${childY + 29}" stroke="${childEdgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
+      group.rules.forEach((rule, ruleIndex) => {
+        const accepted = world.discoveries.includes(rule.id);
+        const ruleY = blockY + ruleIndex * ruleHeight + 2;
+        const childEdgeColor = accepted ? "#5d9b62" : "#c8a25b";
+        edges.push(`<path d="M ${groupX + 178} ${y + 29} C ${groupX + 210} ${y + 29}, ${ruleX - 34} ${ruleY + 29}, ${ruleX} ${ruleY + 29}" stroke="${childEdgeColor}" stroke-width="3" fill="none" stroke-linecap="round" />`);
         nodes.push(`
-          <article class="tree-node ${childAccepted ? "discovered" : unlocked ? "hypothesis" : "locked"}" style="left:${childX}px; top:${childY}px">
-            <strong>${childAccepted ? "Discovered" : unlocked ? "Derived" : "Locked"}</strong>
-            <small>${child.claim}</small>
-            <div class="meter"><span style="width:${Math.round(child.confidence * 100)}%; background:${childAccepted ? "#65a969" : unlocked ? "#c9a96e" : "#aaa08c"}"></span></div>
+          <article class="tree-node ${accepted ? "discovered" : "hypothesis"}" style="left:${ruleX}px; top:${ruleY}px">
+            <strong>${accepted ? "Discovered" : "Hypothesis"}</strong>
+            <small>${rule.claim}</small>
+            <div class="meter"><span style="width:${Math.round(rule.confidence * 100)}%; background:${accepted ? "#65a969" : "#c9a96e"}"></span></div>
             <div class="tags">
-              <span class="tag">${Math.round(child.confidence * 100)}% conf</span>
-              <span class="tag">${Math.round(child.neural * 100)}% net</span>
+              <span class="tag">${Math.round(rule.confidence * 100)}% conf</span>
+              <span class="tag">${Math.round(rule.neural * 100)}% net</span>
             </div>
           </article>
         `);
       });
 
-      blockY += block.height;
+      blockY += group.height;
     }
 
     cursorY += blockHeight + 18;
@@ -1346,13 +1517,7 @@ function renderUnderstandingGraph(domains, overall) {
 
 function renderPanels() {
   const beliefs = aggregateBeliefs();
-  const domains = domainDefs.map((domain) => {
-    const claims = beliefs.filter((belief) => belief.domain === domain.id);
-    const accepted = claims.filter((belief) => world.discoveries.includes(belief.claim)).length;
-    const confidence = claims.reduce((sum, belief) => sum + belief.confidence, 0) / claims.length;
-    const percent = Math.round(((accepted / domain.goal) * 0.7 + confidence * 0.3) * 100);
-    return { ...domain, accepted, confidence, percent: clamp(percent, 0, 100) };
-  });
+  const domains = dynamicDomains(beliefs);
   const overall = Math.round(domains.reduce((sum, domain) => sum + domain.percent, 0) / domains.length);
 
   ui.overall.textContent = `${overall}% charted`;
@@ -1365,7 +1530,7 @@ function renderPanels() {
       <strong>${belief.claim}</strong>
       <div class="meter"><span style="width:${Math.round(belief.confidence * 100)}%"></span></div>
       <div class="tags">
-        <span class="tag">${domainName(belief.domain)}</span>
+        <span class="tag">${titleCase(belief.domain)}</span>
         <span class="tag">${Math.round(belief.confidence * 100)}% consensus</span>
         <span class="tag">${Math.round(belief.neural * 100)}% neural</span>
         <span class="tag">${belief.evidence} notes</span>
