@@ -90,6 +90,29 @@ p {
   letter-spacing: 0.08em;
 }
 
+.viz-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 2px solid #c3b28d;
+  border-radius: 8px;
+  background: #fff8dc;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.viz-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--moss);
+}
+
 .canvas-wrap {
   margin-top: 18px;
   padding: 10px;
@@ -386,6 +409,11 @@ canvas {
   }
 
   .clock {
+    width: 100%;
+  }
+
+  .viz-toggle {
+    justify-content: center;
     width: 100%;
   }
 }

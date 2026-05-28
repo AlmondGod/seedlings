@@ -16,7 +16,8 @@ const ui = {
   tree: document.querySelector("#tree"),
   consensus: document.querySelector("#consensus"),
   overall: document.querySelector("#overall"),
-  reward: document.querySelector("#reward")
+  reward: document.querySelector("#reward"),
+  memeToggle: document.querySelector("#memeToggle")
 };
 
 const rand = (min, max) => min + Math.random() * (max - min);
@@ -39,11 +40,17 @@ const world = {
   ruleStats: new Map(),
   minedRules: [],
   communications: [],
+  memeVisualization: false,
+  memeEdges: [],
   history: [],
   lastHistoryTick: -1,
   reward: 0,
   predictions: 0
 };
+
+ui.memeToggle?.addEventListener("change", () => {
+  world.memeVisualization = ui.memeToggle.checked;
+});
 
 const seasons = ["Sprout", "Cicada", "Maple", "Snowbell"];
 const weatherTypes = ["clear", "clear", "breezy", "rain", "rain", "mist"];
@@ -62,6 +69,13 @@ const outcomeDefs = [
   { id: "bloom", label: "plant bloom", color: "#65a969" },
   { id: "social", label: "listener prediction gain", color: "#a27bc2" }
 ];
+
+const memeColors = {
+  green: "#47c86a",
+  blue: "#4e8fea",
+  red: "#e34f50",
+  black: "#252330"
+};
 
 function createBrain() {
   return {
@@ -316,6 +330,12 @@ const agents = [
     readBias: rand(0.1, 0.35)
   },
   lastAction: "wandering",
+  currentMeme: {
+    nature: "black",
+    color: memeColors.black,
+    until: 0,
+    label: "quiet"
+  },
   outfit: index % 3 === 0 ? "blue" : "plain",
   homeCharm: 0
 }));
@@ -344,15 +364,45 @@ function remember(agent, event) {
 }
 
 function addCommunication(from, to, belief, delta) {
+  const nature = memeNature(belief.confidence, delta);
+  const color = memeColors[nature];
   world.communications.unshift({
     from: from.name,
     to: to.name,
     claim: belief.claim,
     confidence: belief.confidence,
     delta,
+    nature,
     day: world.day
   });
   world.communications = world.communications.slice(0, 10);
+
+  const pulse = {
+    nature,
+    color,
+    until: world.tick + 280,
+    label: belief.claim
+  };
+  from.currentMeme = pulse;
+  to.currentMeme = { ...pulse, until: world.tick + 340 };
+  world.memeEdges.unshift({
+    fromId: from.id,
+    toId: to.id,
+    claim: belief.claim,
+    confidence: belief.confidence,
+    delta,
+    nature,
+    color,
+    tick: world.tick
+  });
+  world.memeEdges = world.memeEdges.slice(0, 32);
+}
+
+function memeNature(confidence, delta) {
+  if (delta < -0.012 || confidence < 0.28) return "red";
+  if (confidence > 0.66 && delta >= 0) return "green";
+  if (delta > 0.018 || confidence > 0.48) return "blue";
+  return "black";
 }
 
 function addPredictionReward(prediction, target) {
@@ -1278,6 +1328,93 @@ function drawWeather() {
   }
 }
 
+function drawMemeVisualization() {
+  if (!world.memeVisualization) return;
+  drawMemeEdges();
+  drawMemeOrbs();
+}
+
+function drawMemeEdges() {
+  const maxAge = 520;
+  ctx.save();
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  for (const edge of world.memeEdges) {
+    const age = world.tick - edge.tick;
+    if (age < 0 || age > maxAge) continue;
+    const from = agents[edge.fromId];
+    const to = agents[edge.toId];
+    if (!from || !to) continue;
+    const alpha = 1 - age / maxAge;
+    const pulse = Math.sin((world.tick - edge.tick) * 0.1) * 0.5 + 0.5;
+    const start = memeOrbPoint(from);
+    const end = memeOrbPoint(to);
+    const mx = (start.x + end.x) / 2;
+    const my = (start.y + end.y) / 2 - clamp(distance(start, end) * 0.12, 18, 80);
+
+    ctx.globalAlpha = alpha * 0.22;
+    ctx.strokeStyle = edge.color;
+    ctx.lineWidth = 16 + pulse * 5;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.quadraticCurveTo(mx, my, end.x, end.y);
+    ctx.stroke();
+
+    ctx.globalAlpha = alpha * 0.78;
+    ctx.strokeStyle = edge.color;
+    ctx.lineWidth = 5 + pulse * 2;
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    ctx.quadraticCurveTo(mx, my, end.x, end.y);
+    ctx.stroke();
+
+    ctx.globalAlpha = alpha * 0.95;
+    drawMemeNode(start.x, start.y, edge.color, 8 + pulse * 2, false);
+    drawMemeNode(end.x, end.y, edge.color, 8 + pulse * 2, false);
+  }
+  ctx.restore();
+}
+
+function drawMemeOrbs() {
+  for (const agent of agents) {
+    const active = world.tick < agent.currentMeme.until;
+    const color = active ? agent.currentMeme.color : memeColors.black;
+    const point = memeOrbPoint(agent);
+    const pulse = active ? Math.sin(world.tick * 0.12 + agent.id) * 1.5 : 0;
+    drawMemeNode(point.x, point.y, color, active ? 11 + pulse : 8, true);
+  }
+}
+
+function memeOrbPoint(agent) {
+  return { x: agent.x, y: agent.y - 44 };
+}
+
+function drawMemeNode(x, y, color, radius, outlined) {
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,245,0.72)";
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#252330";
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.65)";
+  ctx.beginPath();
+  ctx.arc(x - radius * 0.32, y - radius * 0.35, Math.max(2, radius * 0.22), 0, Math.PI * 2);
+  ctx.fill();
+  if (outlined) {
+    ctx.strokeStyle = "rgba(255,255,245,0.78)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 function draw() {
   for (let y = 0; y < rows; y += 1) {
     for (let x = 0; x < cols; x += 1) drawTile(x, y, terrain[y][x]);
@@ -1298,6 +1435,8 @@ function draw() {
     ctx.fillStyle = "rgba(35,43,83,0.28)";
     ctx.fillRect(0, 0, W, H);
   }
+
+  drawMemeVisualization();
 }
 
 function aggregateBeliefs() {
