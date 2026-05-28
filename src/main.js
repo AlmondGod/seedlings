@@ -66,7 +66,7 @@ const hiddenRules = Object.fromEntries(
 );
 
 const outcomeDefs = [
-  { id: "bloom", label: "plant bloom", color: "#65a969" },
+  { id: "bloom", label: "plant response", color: "#65a969" },
   { id: "social", label: "listener prediction gain", color: "#a27bc2" }
 ];
 
@@ -151,7 +151,7 @@ function hashString(text) {
 function plantFacts(plant) {
   const terrainType = terrain[Math.floor(plant.y / tile)]?.[Math.floor(plant.x / tile)] ?? "unknown";
   const nearbyAgents = agents?.filter((agent) => distance(agent, plant) < 80).length ?? 0;
-  return [
+  const baseFacts = [
     `species=${plant.species}`,
     `weather=${world.weather}`,
     `terrain=${terrainType}`,
@@ -159,6 +159,11 @@ function plantFacts(plant) {
     `nearWater=${["river", "pond"].includes(terrainType)}`,
     `crowded=${nearbyAgents >= 3}`,
     `nearBuilding=${isNearBuilding(plant.x, plant.y)}`
+  ];
+  const species = baseFacts[0];
+  return [
+    ...baseFacts,
+    ...baseFacts.slice(1).map((fact) => `${species}&${fact}`)
   ];
 }
 
@@ -395,7 +400,7 @@ function addCommunication(from, to, belief, delta) {
     color,
     tick: world.tick
   });
-  world.memeEdges = world.memeEdges.slice(0, 96);
+  world.memeEdges = world.memeEdges.slice(0, 180);
 }
 
 function memeNature(confidence, delta) {
@@ -446,12 +451,12 @@ function mineRules() {
   const mined = [];
   for (const stat of world.ruleStats.values()) {
     if (stat.feature.startsWith("heard=")) continue;
-    if (stat.seen < 8) continue;
+    if (stat.seen < 6) continue;
     const p = stat.hits / stat.seen;
     const base = stat.absentSeen ? stat.absentHits / stat.absentSeen : 0.5;
     const lift = p - base;
     const confidence = clamp(0.4 * p + 0.6 * Math.max(0, lift), 0, 1);
-    if (lift > 0.22 && p > 0.58) {
+    if (lift > 0.16 && p > 0.54) {
       mined.push({
         id: `${stat.feature}->${stat.outcome}`,
         feature: stat.feature,
@@ -462,13 +467,13 @@ function mineRules() {
         neural: p,
         evidence: stat.seen,
         lift,
-        parent: stat.feature.split("=")[0]
+        parent: stat.feature.includes("&") ? "combined cues" : stat.feature.split("=")[0]
       });
     }
   }
-  world.minedRules = mined.sort((a, b) => b.confidence - a.confidence).slice(0, 18);
+  world.minedRules = mined.sort((a, b) => b.confidence - a.confidence).slice(0, 28);
   for (const rule of world.minedRules) {
-    if (rule.confidence > 0.62 && !world.discoveries.includes(rule.id)) {
+    if (rule.confidence > 0.56 && !world.discoveries.includes(rule.id)) {
       world.discoveries.push(rule.id);
       addLog(`A rule emerged: ${rule.claim}`);
       artifacts.push({
@@ -483,6 +488,9 @@ function mineRules() {
 }
 
 function labelFeature(feature) {
+  if (feature.includes("&")) {
+    return feature.split("&").map(labelFeature).join(" + ");
+  }
   return feature
     .replace("species=", "")
     .replace("weather=", "")
@@ -498,6 +506,7 @@ function labelOutcome(outcome) {
 }
 
 function clusterForFeature(feature) {
+  if (feature.includes("&")) return clusterForFeature(feature.split("&")[1]);
   if (feature.startsWith("species=") || feature === "terrain=garden" || feature === "nearWater=true") return "ecology";
   if (feature.startsWith("weather=") || feature.startsWith("season=") || feature.includes("water")) return "weather";
   if (feature.includes("crowded") || feature.includes("Building") || feature.includes("building") || feature.includes("plaza") || feature.includes("path")) return "social space";
@@ -674,14 +683,14 @@ function moveAgent(agent) {
 }
 
 function observe(agent) {
-  if (world.tick % 52 !== agent.id * 7 % 52) return;
-  const plant = plants.find((p) => distance(agent, p) < 42);
+  if (world.tick % 32 !== agent.id * 5 % 32) return;
+  const plant = plants.find((p) => distance(agent, p) < 70);
   if (!plant) return;
 
   const facts = plantFacts(plant);
   const model = agent.models.bloom;
   const inputs = observationFeatures(plant);
-  const target = plant.bloom ? 1 : 0;
+  const target = hiddenRuleMatchesPlant(plant) ? 1 : 0;
   const prediction = trainBrain(model.brain, inputs, target);
   model.evidence += 1;
   model.neural = prediction;
@@ -689,7 +698,7 @@ function observe(agent) {
   model.source = "field note";
   const reward = recordObservation(agent, "bloom", facts, prediction, target);
 
-  agent.notebook.unshift(`${plant.species} ${plant.bloom ? "bloomed" : "waited"} ${world.weather} (${Math.round(prediction * 100)}%)`);
+  agent.notebook.unshift(`${plant.species} ${target ? "responded" : "waited"} ${world.weather} (${Math.round(prediction * 100)}%)`);
   agent.notebook = agent.notebook.slice(0, 6);
 
   if (Math.abs(target - prediction) > agent.memoryPolicy.writeThreshold && Math.random() < 0.36) {
@@ -699,8 +708,10 @@ function observe(agent) {
 
 function talk() {
   for (const a of agents) {
-    if (world.tick % 55 !== (a.id * 11) % 55) continue;
-    const b = agents.find((candidate) => candidate !== a && distance(a, candidate) < 44);
+    if (world.tick % 34 !== (a.id * 7) % 34) continue;
+    const b = agents
+      .filter((candidate) => candidate !== a && distance(a, candidate) < 96)
+      .sort((left, right) => distance(a, left) - distance(a, right))[0];
     if (!b) continue;
 
     const rule = world.minedRules.find((item) => item.outcome === "bloom" && world.discoveries.includes(item.id)) ??
@@ -1335,7 +1346,7 @@ function drawMemeVisualization() {
 }
 
 function drawMemeEdges() {
-  const maxAge = 2400;
+  const maxAge = 7200;
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -1345,32 +1356,33 @@ function drawMemeEdges() {
     const from = agents[edge.fromId];
     const to = agents[edge.toId];
     if (!from || !to) continue;
-    const alpha = clamp(1 - age / maxAge, 0.12, 1);
+    const alpha = clamp(1 - age / maxAge, 0.24, 1);
     const pulse = Math.sin((world.tick - edge.tick) * 0.1) * 0.5 + 0.5;
     const start = memeOrbPoint(from);
     const end = memeOrbPoint(to);
     const mx = (start.x + end.x) / 2;
     const my = (start.y + end.y) / 2 - clamp(distance(start, end) * 0.12, 18, 80);
+    const stroke = edge.nature === "black" ? "#f6efd2" : edge.color;
 
-    ctx.globalAlpha = alpha * 0.22;
-    ctx.strokeStyle = edge.color;
-    ctx.lineWidth = 16 + pulse * 5;
+    ctx.globalAlpha = alpha * 0.42;
+    ctx.strokeStyle = "rgba(255, 252, 229, 0.95)";
+    ctx.lineWidth = 24 + pulse * 6;
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
     ctx.quadraticCurveTo(mx, my, end.x, end.y);
     ctx.stroke();
 
-    ctx.globalAlpha = alpha * 0.78;
-    ctx.strokeStyle = edge.color;
-    ctx.lineWidth = 5 + pulse * 2;
+    ctx.globalAlpha = alpha * 0.92;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 9 + pulse * 3;
     ctx.beginPath();
     ctx.moveTo(start.x, start.y);
     ctx.quadraticCurveTo(mx, my, end.x, end.y);
     ctx.stroke();
 
     ctx.globalAlpha = alpha * 0.95;
-    drawMemeNode(start.x, start.y, edge.color, 8 + pulse * 2, false);
-    drawMemeNode(end.x, end.y, edge.color, 8 + pulse * 2, false);
+    drawMemeNode(start.x, start.y, edge.color, 10 + pulse * 2, false);
+    drawMemeNode(end.x, end.y, edge.color, 10 + pulse * 2, false);
   }
   ctx.restore();
 }
