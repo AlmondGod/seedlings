@@ -395,7 +395,7 @@ function addCommunication(from, to, belief, delta) {
     color,
     tick: world.tick
   });
-  world.memeEdges = world.memeEdges.slice(0, 32);
+  world.memeEdges = world.memeEdges.slice(0, 96);
 }
 
 function memeNature(confidence, delta) {
@@ -1335,7 +1335,7 @@ function drawMemeVisualization() {
 }
 
 function drawMemeEdges() {
-  const maxAge = 520;
+  const maxAge = 2400;
   ctx.save();
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -1345,7 +1345,7 @@ function drawMemeEdges() {
     const from = agents[edge.fromId];
     const to = agents[edge.toId];
     if (!from || !to) continue;
-    const alpha = 1 - age / maxAge;
+    const alpha = clamp(1 - age / maxAge, 0.12, 1);
     const pulse = Math.sin((world.tick - edge.tick) * 0.1) * 0.5 + 0.5;
     const start = memeOrbPoint(from);
     const end = memeOrbPoint(to);
