@@ -3,45 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seedlings</title>
+    <title>Alchemy Commons</title>
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
     <main class="shell">
-      <section class="sim-stage" aria-label="Seedlings simulation">
+      <section class="sim-stage" aria-label="Alchemy Commons simulation">
         <header class="topbar">
           <div>
-            <h1>Seedlings</h1>
-            <p>A tiny society studying its own garden world.</p>
+            <h1>Alchemy Commons</h1>
+            <p>A society of AI agents independently developed a chemistry.</p>
           </div>
           <div class="clock">
-            <span id="season">Sprout</span>
+            <span id="season">Dawn</span>
             <strong id="day">Day 1</strong>
-            <span id="weather">clear</span>
+            <span id="weather">neutral</span>
           </div>
           <label class="viz-toggle">
             <input id="memeToggle" type="checkbox" />
-            <span>Meme visualization</span>
+            <span>Meme graph</span>
           </label>
         </header>
 
         <div class="canvas-wrap">
-          <canvas id="world" width="1920" height="1280" aria-label="Autonomous pixel village"></canvas>
+          <canvas id="world" width="1920" height="1280" aria-label="Autonomous alchemy laboratory"></canvas>
         </div>
       </section>
 
       <aside class="observer">
         <section class="panel">
           <div class="panel-title">
-            <span>Discovery Tree</span>
-            <small>village science</small>
+            <span>Benchmark Questions</span>
+            <small>Qwen-style shared backbone</small>
+          </div>
+          <div class="beliefs">
+            <article class="belief">
+              <strong>How do beliefs change over time?</strong>
+              <div class="tags">
+                <span class="tag">retrieved-token memory buffer</span>
+                <span class="tag">policy + communication backbone</span>
+              </div>
+            </article>
+            <article class="belief">
+              <strong>Do positive-utility memes outcompete negative ones?</strong>
+              <div class="tags">
+                <span class="tag">green/blue vs red/black</span>
+                <span class="tag">asymmetry is a finding</span>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <span>Chemistry Tree</span>
+            <small>reaction laws</small>
           </div>
           <div id="tree" class="tree"></div>
         </section>
 
         <section class="panel">
           <div class="panel-title">
-            <span>Research Board</span>
+            <span>Lab Notebooks</span>
             <small id="consensus">forming first questions</small>
           </div>
           <div id="beliefs" class="beliefs"></div>
@@ -49,7 +72,7 @@
 
         <section class="panel">
           <div class="panel-title">
-            <span>Communication</span>
+            <span>Teaching</span>
             <small id="reward">0.00 reward</small>
           </div>
           <div id="communications" class="communications"></div>
@@ -57,7 +80,7 @@
 
         <section class="panel">
           <div class="panel-title">
-            <span>World Understanding</span>
+            <span>Chemistry Understanding</span>
             <small id="overall">0% charted</small>
           </div>
           <div id="domains" class="domains"></div>

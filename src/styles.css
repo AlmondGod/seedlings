@@ -21,9 +21,9 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0)),
-    radial-gradient(circle at 15% 15%, #f9df9f 0 8%, transparent 9%),
-    linear-gradient(135deg, #d4edcf 0%, #f8e6b3 46%, #d5edf0 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 15% 15%, #d8c5ff 0 8%, transparent 9%),
+    linear-gradient(135deg, #cfd8dd 0%, #f2d79a 48%, #cbe8eb 100%);
   color: var(--ink);
   font-family: ui-rounded, "Hiragino Maru Gothic ProN", "Trebuchet MS", system-ui, sans-serif;
 }
@@ -133,7 +133,7 @@ canvas {
   max-width: none;
   image-rendering: pixelated;
   border-radius: 4px;
-  background: #96cd78;
+  background: #b9b3a5;
 }
 
 .observer {

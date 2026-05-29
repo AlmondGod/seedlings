@@ -32,7 +32,7 @@ const world = {
   tick: 0,
   day: 1,
   seasonIndex: 0,
-  weather: "clear",
+  weather: "neutral",
   nextWeatherTick: 0,
   log: [],
   discoveries: [],
@@ -52,13 +52,13 @@ ui.memeToggle?.addEventListener("change", () => {
   world.memeVisualization = ui.memeToggle.checked;
 });
 
-const seasons = ["Sprout", "Cicada", "Maple", "Snowbell"];
-const weatherTypes = ["clear", "clear", "breezy", "rain", "rain", "mist"];
+const seasons = ["Dawn", "Noon", "Dusk", "Midnight"];
+const weatherTypes = ["neutral", "neutral", "warmth", "acid", "acid", "vapor"];
 const clusterPalette = ["#65a969", "#5d8edb", "#de8a4c", "#a27bc2", "#d45f73", "#d8b34d"];
 const predictorPool = {
-  bluecap: ["weather=rain", "weather=mist", "terrain=garden", "nearWater=true"],
-  sunbean: ["weather=clear", "season=Cicada", "terrain=garden", "terrain=plaza"],
-  puffroot: ["terrain=path", "terrain=plaza", "crowded=true", "nearBuilding=true"]
+  emberglass: ["weather=warmth", "terrain=furnace", "terrain=bench", "nearWater=false"],
+  moonsalt: ["weather=vapor", "season=Midnight", "terrain=bench", "terrain=archive"],
+  verdigris: ["weather=acid", "terrain=channel", "crowded=true", "nearBuilding=true"]
 };
 
 const hiddenRules = Object.fromEntries(
@@ -66,7 +66,7 @@ const hiddenRules = Object.fromEntries(
 );
 
 const outcomeDefs = [
-  { id: "bloom", label: "plant response", color: "#65a969" },
+  { id: "reaction", label: "reaction success", color: "#65a969" },
   { id: "social", label: "listener prediction gain", color: "#a27bc2" }
 ];
 
@@ -122,14 +122,14 @@ function observationFeatures(plant) {
   const facts = plantFacts(plant);
   const hour = (world.tick % 1440) / 1440;
   return [
-    facts.includes("species=bluecap") ? 1 : 0,
-    facts.includes("species=sunbean") ? 1 : 0,
-    facts.includes("species=puffroot") ? 1 : 0,
-    facts.includes("weather=rain") ? 1 : 0,
-    facts.includes("weather=clear") ? 1 : 0,
-    facts.includes("weather=mist") ? 1 : 0,
-    facts.includes("terrain=path") || facts.includes("terrain=plaza") ? 1 : 0,
-    facts.includes("terrain=garden") ? 1 : 0,
+    facts.includes("species=emberglass") ? 1 : 0,
+    facts.includes("species=moonsalt") ? 1 : 0,
+    facts.includes("species=verdigris") ? 1 : 0,
+    facts.includes("weather=acid") ? 1 : 0,
+    facts.includes("weather=neutral") ? 1 : 0,
+    facts.includes("weather=vapor") ? 1 : 0,
+    facts.includes("terrain=channel") || facts.includes("terrain=archive") ? 1 : 0,
+    facts.includes("terrain=bench") || facts.includes("terrain=furnace") ? 1 : 0,
     facts.includes("nearWater=true") ? 1 : 0,
     hour
   ];
@@ -156,7 +156,7 @@ function plantFacts(plant) {
     `weather=${world.weather}`,
     `terrain=${terrainType}`,
     `season=${seasons[world.seasonIndex]}`,
-    `nearWater=${["river", "pond"].includes(terrainType)}`,
+    `nearWater=${["channel", "basin"].includes(terrainType)}`,
     `crowded=${nearbyAgents >= 3}`,
     `nearBuilding=${isNearBuilding(plant.x, plant.y)}`
   ];
@@ -189,18 +189,18 @@ const houses = [
 ];
 
 const landmarks = [
-  { type: "townHall", name: "Town Hall", x: 13, y: 8, w: 5, h: 4, roof: "#c95f55", wall: "#f4dca9" },
-  { type: "lab", name: "Experiment Lab", x: 24, y: 12, w: 6, h: 4, roof: "#5f8fc9", wall: "#e8ece4" },
-  { type: "archive", name: "Archive", x: 23, y: 8, w: 5, h: 3, roof: "#a979bd", wall: "#efe2c7" },
-  { type: "workshop", name: "Tool Workshop", x: 4, y: 13, w: 3, h: 2, roof: "#d89b4a", wall: "#ead0a3" },
-  { type: "observatory", name: "Sky Hut", x: 49, y: 4, w: 2, h: 2, roof: "#4f6fb4", wall: "#d7e3ec" },
-  { type: "shrine", name: "Moss Shrine", x: 5, y: 8, w: 2, h: 3, roof: "#d85d63", wall: "#f4cc72" },
-  { type: "dock", name: "Fishing Dock", x: 3, y: 5, w: 3, h: 2, roof: "#9a7147", wall: "#c99b62" },
-  { type: "cafe", name: "Memory Cafe", x: 34, y: 9, w: 5, h: 3, roof: "#d28a4d", wall: "#f0d09e" },
-  { type: "school", name: "Sprout School", x: 45, y: 12, w: 5, h: 4, roof: "#6aa86c", wall: "#e8dfbc" },
-  { type: "greenhouse", name: "Greenhouse", x: 10, y: 27, w: 6, h: 4, roof: "#6fbfb2", wall: "#d8eee2" },
-  { type: "market", name: "Market Hall", x: 31, y: 30, w: 6, h: 4, roof: "#d8b34d", wall: "#efddb3" },
-  { type: "theater", name: "Song Theater", x: 45, y: 28, w: 6, h: 4, roof: "#cc6d8e", wall: "#ead5c5" }
+  { type: "townHall", name: "Commons Hall", x: 13, y: 8, w: 5, h: 4, roof: "#8f6fd6", wall: "#efe0c6" },
+  { type: "lab", name: "Synthesis Lab", x: 24, y: 12, w: 6, h: 4, roof: "#5f8fc9", wall: "#e8ece4" },
+  { type: "archive", name: "Formula Archive", x: 23, y: 8, w: 5, h: 3, roof: "#a979bd", wall: "#efe2c7" },
+  { type: "workshop", name: "Glassworks", x: 4, y: 13, w: 3, h: 2, roof: "#d89b4a", wall: "#ead0a3" },
+  { type: "observatory", name: "Fume Tower", x: 49, y: 4, w: 2, h: 2, roof: "#4f6fb4", wall: "#d7e3ec" },
+  { type: "shrine", name: "Catalyst Shrine", x: 5, y: 8, w: 2, h: 3, roof: "#d85d63", wall: "#f4cc72" },
+  { type: "dock", name: "Solvent Bath", x: 3, y: 5, w: 3, h: 2, roof: "#5aaec8", wall: "#c99b62" },
+  { type: "cafe", name: "Memory Refectory", x: 34, y: 9, w: 5, h: 3, roof: "#d28a4d", wall: "#f0d09e" },
+  { type: "school", name: "Apprentice Hall", x: 45, y: 12, w: 5, h: 4, roof: "#6aa86c", wall: "#e8dfbc" },
+  { type: "greenhouse", name: "Distillery", x: 10, y: 27, w: 6, h: 4, roof: "#6fbfb2", wall: "#d8eee2" },
+  { type: "market", name: "Reagent Exchange", x: 31, y: 30, w: 6, h: 4, roof: "#d8b34d", wall: "#efddb3" },
+  { type: "theater", name: "Lecture Theater", x: 45, y: 28, w: 6, h: 4, roof: "#cc6d8e", wall: "#ead5c5" }
 ];
 
 const terrain = Array.from({ length: rows }, (_, y) =>
@@ -208,13 +208,13 @@ const terrain = Array.from({ length: rows }, (_, y) =>
     const edge = x < 1 || y < 1 || x > cols - 2 || y > rows - 2;
     const riverY = 6 + Math.round(Math.sin(x * 0.34) * 2.2);
     if (edge) return "trees";
-    if (x > 1 && x < cols - 2 && Math.abs(y - riverY) <= 1) return "river";
-    if ((x - 52) ** 2 + (y - 8) ** 2 < 18) return "pond";
-    if ((x - 50) ** 2 + (y - 32) ** 2 < 11) return "pond";
-    if (x > 2 && x < 10 && y > 12 && y < 18) return "garden";
-    if (x > 9 && x < 17 && y > 26 && y < 33) return "garden";
-    if (x > 12 && x < 31 && y > 8 && y < 19) return "plaza";
-    if (x > 30 && x < 52 && y > 22 && y < 35) return "plaza";
+    if (x > 1 && x < cols - 2 && Math.abs(y - riverY) <= 1) return "channel";
+    if ((x - 52) ** 2 + (y - 8) ** 2 < 18) return "basin";
+    if ((x - 50) ** 2 + (y - 32) ** 2 < 11) return "basin";
+    if (x > 2 && x < 10 && y > 12 && y < 18) return "bench";
+    if (x > 9 && x < 17 && y > 26 && y < 33) return "bench";
+    if (x > 12 && x < 31 && y > 8 && y < 19) return "furnace";
+    if (x > 30 && x < 52 && y > 22 && y < 35) return "archive";
     if (
       (x > 6 && x < 53 && (y === 20 || y === 21)) ||
       (x > 10 && x < 55 && y === 12) ||
@@ -223,8 +223,8 @@ const terrain = Array.from({ length: rows }, (_, y) =>
       (x === 7 && y > 7 && y < 22) ||
       (y > 6 && y < 10 && x > 2 && x < 8)
     ) return "path";
-    if ((x + y) % 17 === 0) return "flowers";
-    return "grass";
+    if ((x + y) % 17 === 0) return "crystals";
+    return "floor";
   })
 );
 
@@ -235,7 +235,7 @@ for (let i = 0; i < 90; i += 1) {
   let x = inGarden ? rand(gardenZone.x1, gardenZone.x2) * tile : rand(2, cols - 3) * tile;
   let y = inGarden ? rand(gardenZone.y1, gardenZone.y2) * tile : rand(2, rows - 3) * tile;
   let guard = 0;
-  while (!inGarden && ["river", "pond", "trees"].includes(terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)]) && guard < 20) {
+  while (!inGarden && ["channel", "basin", "trees"].includes(terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)]) && guard < 20) {
     x = rand(2, cols - 3) * tile;
     y = rand(2, rows - 3) * tile;
     guard += 1;
@@ -243,7 +243,7 @@ for (let i = 0; i < 90; i += 1) {
   plants.push({
     x,
     y,
-    species: pick(["bluecap", "sunbean", "puffroot"]),
+    species: pick(["emberglass", "moonsalt", "verdigris"]),
     age: rand(0, 1),
     bloom: false,
     observedRain: 0
@@ -255,45 +255,45 @@ const skinPalettes = ["#f4d6a3", "#d9b47f", "#b7d48b", "#98cfa7", "#d7c7a5", "#b
 const clothingPalettes = ["#476c55", "#5b8f6b", "#7a6aa8", "#b66b56", "#4f7f9f", "#a08248", "#8c5f7f", "#52786c"];
 
 const agents = [
-  ["Mika", "cartographer"],
-  ["Taro", "gardener"],
+  ["Mika", "glass scribe"],
+  ["Taro", "reagent keeper"],
   ["Nori", "skeptic"],
-  ["Piko", "songmaker"],
-  ["Sumi", "dreamer"],
+  ["Piko", "formula singer"],
+  ["Sumi", "dream theorist"],
   ["Ren", "teacher"],
-  ["Kiko", "collector"],
-  ["Bo", "tinkerer"],
+  ["Kiko", "sample collector"],
+  ["Bo", "apparatus tuner"],
   ["Yui", "child"],
   ["Aki", "elder"],
-  ["Mori", "naturalist"],
-  ["Nana", "weatherwatcher"],
-  ["Tobu", "builder"],
+  ["Mori", "chemist"],
+  ["Nana", "catalyst watcher"],
+  ["Tobu", "furnace builder"],
   ["Lumi", "archivist"],
-  ["Fenn", "forager"],
+  ["Fenn", "distiller"],
   ["Riri", "listener"],
   ["Momo", "student"],
-  ["Sora", "mapper"],
-  ["Beni", "caretaker"],
+  ["Sora", "lab mapper"],
+  ["Beni", "bench keeper"],
   ["Iro", "inventor"],
-  ["Koma", "gardener"],
-  ["Mugi", "forager"],
+  ["Koma", "reagent keeper"],
+  ["Mugi", "distiller"],
   ["Hana", "teacher"],
-  ["Toki", "weatherwatcher"],
-  ["Nemu", "dreamer"],
-  ["Raku", "builder"],
+  ["Toki", "catalyst watcher"],
+  ["Nemu", "dream theorist"],
+  ["Raku", "furnace builder"],
   ["Sasa", "listener"],
   ["Pomu", "student"],
   ["Kiri", "archivist"],
-  ["Maro", "naturalist"],
+  ["Maro", "chemist"],
   ["Fuyu", "skeptic"],
-  ["Tama", "caretaker"],
-  ["Mina", "cartographer"],
+  ["Tama", "bench keeper"],
+  ["Mina", "glass scribe"],
   ["Kumo", "inventor"],
-  ["Roko", "collector"],
+  ["Roko", "sample collector"],
   ["Niko", "child"],
-  ["Suzu", "mapper"],
-  ["Pipi", "songmaker"],
-  ["Eno", "tinkerer"],
+  ["Suzu", "lab mapper"],
+  ["Pipi", "formula singer"],
+  ["Eno", "apparatus tuner"],
   ["Matsu", "elder"]
 ].map(([name, role], index) => ({
   id: index,
@@ -316,6 +316,7 @@ const agents = [
   speechUntil: 0,
   notebook: [],
   memory: [],
+  retrievedTokens: [],
   models: Object.fromEntries(outcomeDefs.map((outcome) => [outcome.id, {
     ...outcome,
     confidence: rand(0.08, 0.18),
@@ -366,6 +367,18 @@ function remember(agent, event) {
     ...event
   });
   agent.memory = agent.memory.slice(0, 24);
+  agent.retrievedTokens.unshift(memoryToken(event));
+  agent.retrievedTokens = agent.retrievedTokens.filter(Boolean).slice(0, 32);
+}
+
+function memoryToken(event) {
+  if (!event) return "";
+  if (event.type === "observation") {
+    const cue = event.facts?.[0]?.replace("species=", "re:") ?? event.outcome;
+    return `${cue}|${event.outcome}|${Math.round((event.reward ?? 0) * 100)}`;
+  }
+  if (event.type === "heard" || event.type === "said") return `${event.type}|${event.claim}|${Math.round((event.confidence ?? 0) * 100)}`;
+  return `${event.type ?? "memory"}|${event.claim ?? event.outcome ?? "lab"}`;
 }
 
 function addCommunication(from, to, belief, delta) {
@@ -422,7 +435,7 @@ function recordObservation(agent, outcome, facts, prediction, target, source = "
   const record = { tick: world.tick, day: world.day, agent: agent.name, outcome, facts, prediction, target, reward, source };
   world.observations.push(record);
   world.observations = world.observations.slice(-2500);
-  if (outcome === "bloom") {
+  if (outcome === "reaction") {
     for (const fact of facts) updateRuleStat(fact, outcome, target);
     mineRules();
   }
@@ -492,13 +505,17 @@ function labelFeature(feature) {
     return feature.split("&").map(labelFeature).join(" + ");
   }
   return feature
+    .replace("emberglass", "emberglass")
+    .replace("moonsalt", "moon salt")
+    .replace("verdigris", "verdigris")
     .replace("species=", "")
-    .replace("weather=", "")
+    .replace("weather=", "ambient ")
     .replace("terrain=", "")
     .replace("season=", "")
-    .replace("nearWater=true", "water adjacency")
+    .replace("nearWater=true", "solvent adjacency")
+    .replace("nearWater=false", "dry station")
     .replace("crowded=true", "crowding")
-    .replace("nearBuilding=true", "building proximity");
+    .replace("nearBuilding=true", "apparatus proximity");
 }
 
 function labelOutcome(outcome) {
@@ -507,10 +524,10 @@ function labelOutcome(outcome) {
 
 function clusterForFeature(feature) {
   if (feature.includes("&")) return clusterForFeature(feature.split("&")[1]);
-  if (feature.startsWith("species=") || feature === "terrain=garden" || feature === "nearWater=true") return "ecology";
-  if (feature.startsWith("weather=") || feature.startsWith("season=") || feature.includes("water")) return "weather";
-  if (feature.includes("crowded") || feature.includes("Building") || feature.includes("building") || feature.includes("plaza") || feature.includes("path")) return "social space";
-  return "prediction";
+  if (feature.startsWith("species=") || feature === "terrain=bench" || feature === "nearWater=true") return "reagents";
+  if (feature.startsWith("weather=") || feature.startsWith("season=") || feature.includes("water")) return "catalysts";
+  if (feature.includes("crowded") || feature.includes("Building") || feature.includes("building") || feature.includes("archive") || feature.includes("path")) return "apparatus";
+  return "models";
 }
 
 function titleCase(text) {
@@ -533,8 +550,8 @@ function updatePolicy(agent, reward) {
 function setWeather() {
   world.weather = pick(weatherTypes);
   world.nextWeatherTick = world.tick + 720;
-  if (world.weather === "rain") {
-    addLog("Rain softened the garden. The villagers began watching which plants respond.");
+  if (world.weather === "acid") {
+    addLog("The lab air turned acidic. Alchemists began retesting reagent reactions.");
   }
 }
 
@@ -566,23 +583,23 @@ function chooseTarget(agent) {
   agent.lastAction = action;
   if (action === "observing") {
     const plant = pick(plants);
-    setTarget(agent, plant.x + rand(-16, 16), plant.y + rand(-16, 16), "observing plants");
+    setTarget(agent, plant.x + rand(-16, 16), plant.y + rand(-16, 16), "testing reagents");
   } else if (action === "researching") {
     const site = pick(landmarks.filter((landmark) => ["lab", "archive", "townHall", "observatory"].includes(landmark.type)));
-    setTarget(agent, (site.x + site.w / 2) * tile, (site.y + site.h + 0.35) * tile, "writing theory");
+    setTarget(agent, (site.x + site.w / 2) * tile, (site.y + site.h + 0.35) * tile, "writing formula");
   } else if (action === "talking") {
     const friend = pick(agents.filter((a) => a !== agent));
-    setTarget(agent, friend.x + rand(-28, 28), friend.y + rand(-28, 28), "seeking talk");
+    setTarget(agent, friend.x + rand(-28, 28), friend.y + rand(-28, 28), "teaching formula");
   } else {
     const site = pick([
-      { x: 4.4, y: 7.4, action: "fishing" },
-      { x: 6.2, y: 11.3, action: "visiting shrine" },
-      { x: 5.5, y: 15.8, action: "tinkering" },
-      { x: 36, y: 11.8, action: "sharing coffee notes" },
-      { x: 47, y: 16.3, action: "studying at school" },
-      { x: 34, y: 34.3, action: "market gossip" },
-      { x: 49, y: 32.3, action: "performing song" },
-      { x: rand(3, cols - 4), y: rand(2, rows - 4), action: pick(["wandering", "humming", "collecting"]) }
+      { x: 4.4, y: 7.4, action: "checking solvent bath" },
+      { x: 6.2, y: 11.3, action: "tuning catalyst" },
+      { x: 5.5, y: 15.8, action: "blowing glass" },
+      { x: 36, y: 11.8, action: "sharing lab notes" },
+      { x: 47, y: 16.3, action: "studying recipes" },
+      { x: 34, y: 34.3, action: "trading reagents" },
+      { x: 49, y: 32.3, action: "giving lecture" },
+      { x: rand(3, cols - 4), y: rand(2, rows - 4), action: pick(["wandering", "calibrating", "collecting"]) }
     ]);
     setTarget(agent, site.x * tile, site.y * tile, site.action);
   }
@@ -619,7 +636,7 @@ function isWalkablePixel(x, y) {
   if (isBuildingShellPixel(x, y)) return false;
 
   const terrainType = terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)];
-  return !["river", "pond", "trees"].includes(terrainType);
+  return !["channel", "basin", "trees"].includes(terrainType);
 }
 
 function isDockPixel(x, y) {
@@ -688,7 +705,7 @@ function observe(agent) {
   if (!plant) return;
 
   const facts = plantFacts(plant);
-  const model = agent.models.bloom;
+  const model = agent.models.reaction;
   const inputs = observationFeatures(plant);
   const target = hiddenRuleMatchesPlant(plant) ? 1 : 0;
   const prediction = trainBrain(model.brain, inputs, target);
@@ -696,13 +713,13 @@ function observe(agent) {
   model.neural = prediction;
   model.confidence = clamp(model.confidence * 0.78 + prediction * 0.16 + target * 0.05, 0, 0.98);
   model.source = "field note";
-  const reward = recordObservation(agent, "bloom", facts, prediction, target);
+  const reward = recordObservation(agent, "reaction", facts, prediction, target);
 
-  agent.notebook.unshift(`${plant.species} ${target ? "responded" : "waited"} ${world.weather} (${Math.round(prediction * 100)}%)`);
+  agent.notebook.unshift(`${labelFeature(`species=${plant.species}`)} ${target ? "reacted" : "stayed inert"} ${world.weather} (${Math.round(prediction * 100)}%)`);
   agent.notebook = agent.notebook.slice(0, 6);
 
   if (Math.abs(target - prediction) > agent.memoryPolicy.writeThreshold && Math.random() < 0.36) {
-    speak(agent, pick(["field note!", "odd result!", "tiny proof!", "hmm!"]));
+    speak(agent, pick(["lab note!", "odd result!", "tiny proof!", "hmm!"]));
   }
 }
 
@@ -714,13 +731,13 @@ function talk() {
       .sort((left, right) => distance(a, left) - distance(a, right))[0];
     if (!b) continue;
 
-    const rule = world.minedRules.find((item) => item.outcome === "bloom" && world.discoveries.includes(item.id)) ??
-      world.minedRules.find((item) => item.outcome === "bloom") ??
+    const rule = world.minedRules.find((item) => item.outcome === "reaction" && world.discoveries.includes(item.id)) ??
+      world.minedRules.find((item) => item.outcome === "reaction") ??
       world.minedRules.find((item) => world.discoveries.includes(item.id)) ??
       world.minedRules[0];
-    const memory = a.memory.find((item) => item.type === "observation");
+    const memory = a.retrievedTokens[0] ?? a.memory.find((item) => item.type === "observation");
     const symbol = rule ? compactRule(rule) : compactMemory(memory);
-    const confidence = rule?.confidence ?? (memory ? memory.reward : 0.5);
+    const confidence = rule?.confidence ?? memoryConfidence(memory);
     const model = b.models.social;
     const trust = 0.024 + (a.role === "teacher" || b.role === "child" ? 0.026 : 0);
     const target = confidence > 0.58 ? 1 : 0;
@@ -741,20 +758,31 @@ function talk() {
 
 function compactRule(rule) {
   const feature = rule.feature
-    .replace("weather=", "w:")
-    .replace("terrain=", "t:")
-    .replace("species=", "s:")
-    .replace("season=", "se:")
-    .replace("nearWater=true", "water")
+    .replace("weather=", "cat:")
+    .replace("terrain=", "app:")
+    .replace("species=", "re:")
+    .replace("season=", "cycle:")
+    .replace("nearWater=true", "solvent")
+    .replace("nearWater=false", "dry")
     .replace("crowded=true", "crowd")
-    .replace("nearBuilding=true", "house");
+    .replace("nearBuilding=true", "apparatus");
   return `${feature}->${rule.outcome}`;
 }
 
 function compactMemory(memory) {
-  if (!memory) return "notebook?";
-  const cue = memory.facts?.[0]?.replace("species=", "s:") ?? "note";
-  return `${cue}->${memory.outcome ?? "world"}`;
+  if (!memory) return "formula?";
+  if (typeof memory === "string") return memory.split("|").slice(0, 2).join("->");
+  const cue = memory.facts?.[0]?.replace("species=", "re:") ?? "note";
+  return `${cue}->${memory.outcome ?? "chemistry"}`;
+}
+
+function memoryConfidence(memory) {
+  if (!memory) return 0.5;
+  if (typeof memory === "string") {
+    const score = Number(memory.split("|")[2]);
+    return Number.isFinite(score) ? score / 100 : 0.5;
+  }
+  return memory.reward ?? memory.confidence ?? 0.5;
 }
 
 function speak(agent, text) {
@@ -778,7 +806,7 @@ function update() {
   if (world.tick % 1440 === 0) {
     world.day += 1;
     world.seasonIndex = Math.floor((world.day - 1) / 7) % seasons.length;
-    addLog("Night notebooks became fresh questions for morning.");
+    addLog("Night formulas became fresh ablations for morning.");
   }
 
   agents.forEach((agent) => {
@@ -793,14 +821,15 @@ function drawTile(x, y, type) {
   const px = x * tile;
   const py = y * tile;
   const palette = {
-    grass: "#91cf73",
-    flowers: "#9edb78",
-    garden: "#9a7651",
+    floor: "#b9b3a5",
+    crystals: "#c7b4d8",
+    bench: "#9a7651",
     path: "#d8bf7a",
-    plaza: "#cdb579",
-    river: "#5faed0",
-    pond: "#5aaec8",
-    trees: "#4c8b55"
+    furnace: "#b77c57",
+    channel: "#5faed0",
+    basin: "#5aaec8",
+    archive: "#cdb579",
+    trees: "#675d68"
   };
   ctx.fillStyle = palette[type];
   ctx.fillRect(px, py, tile, tile);
@@ -810,14 +839,14 @@ function drawTile(x, y, type) {
   ctx.fillStyle = "rgba(58, 93, 48, 0.12)";
   if ((x + y * 2) % 5 === 0) ctx.fillRect(px + 20, py + 18, 6, 3);
 
-  if (type === "grass" || type === "flowers") {
-    ctx.fillStyle = "#5ea55a";
+  if (type === "floor" || type === "crystals") {
+    ctx.fillStyle = "#8f8791";
     if ((x + y) % 2 === 0) {
-      ctx.fillRect(px + 8, py + 22, 3, 5);
-      ctx.fillRect(px + 12, py + 19, 3, 8);
+      ctx.fillRect(px + 8, py + 22, 8, 2);
+      ctx.fillRect(px + 12, py + 14, 2, 8);
     }
     if ((x * 7 + y) % 5 === 0) {
-      ctx.fillStyle = "#d95e7a";
+      ctx.fillStyle = "#7a5ed9";
       ctx.fillRect(px + 23, py + 9, 3, 3);
       ctx.fillStyle = "#f6d765";
       ctx.fillRect(px + 26, py + 12, 2, 2);
@@ -825,13 +854,13 @@ function drawTile(x, y, type) {
   }
 
   if (type === "trees") {
-    ctx.fillStyle = "#2f653f";
+    ctx.fillStyle = "#3f3543";
     ctx.fillRect(px + 7, py + 7, 18, 19);
-    ctx.fillStyle = "#4f9a59";
+    ctx.fillStyle = "#6d6270";
     ctx.fillRect(px + 5, py + 4, 22, 14);
-    ctx.fillStyle = "#6fb867";
+    ctx.fillStyle = "#9c8f9f";
     ctx.fillRect(px + 10, py + 2, 12, 8);
-    ctx.fillStyle = "#725134";
+    ctx.fillStyle = "#514656";
     ctx.fillRect(px + 13, py + 20, 6, 10);
     ctx.fillStyle = "rgba(255,255,255,0.18)";
     ctx.fillRect(px + 9, py + 7, 5, 3);
@@ -844,7 +873,7 @@ function drawTile(x, y, type) {
     if ((x + y) % 2 === 0) ctx.fillRect(px + 4, py + 14, 7, 3);
     if ((x + y) % 3 === 0) ctx.fillRect(px + 18, py + 6, 3, 7);
   }
-  if (type === "plaza") {
+  if (type === "archive") {
     ctx.fillStyle = "#bfa266";
     ctx.fillRect(px, py, tile, tile);
     ctx.fillStyle = "#dbc489";
@@ -854,20 +883,29 @@ function drawTile(x, y, type) {
     ctx.fillRect(px + 17, py + 2, 13, 12);
     ctx.fillRect(px + 2, py + 18, 12, 12);
   }
-  if (type === "garden") {
+  if (type === "bench") {
     ctx.fillStyle = "#7d5b3e";
     for (let i = 0; i < 4; i += 1) ctx.fillRect(px, py + i * 8 + 3, tile, 2);
     ctx.fillStyle = "#af8b5d";
     if ((x + y) % 2 === 0) ctx.fillRect(px + 6, py + 7, 20, 3);
   }
-  if (type === "river" || type === "pond") {
-    ctx.fillStyle = type === "river" ? "#4b98bd" : "#438fab";
+  if (type === "furnace") {
+    ctx.fillStyle = "#9e6348";
+    ctx.fillRect(px, py, tile, tile);
+    ctx.fillStyle = "#d69a62";
+    ctx.fillRect(px + 2, py + 2, 12, 12);
+    ctx.fillRect(px + 18, py + 18, 12, 12);
+    ctx.fillStyle = "rgba(255, 226, 126, 0.42)";
+    if ((x + y + Math.floor(world.tick / 20)) % 3 === 0) ctx.fillRect(px + 11, py + 11, 10, 10);
+  }
+  if (type === "channel" || type === "basin") {
+    ctx.fillStyle = type === "channel" ? "#4b98bd" : "#438fab";
     ctx.fillRect(px, py, tile, tile);
     ctx.fillStyle = "#438fab";
     ctx.fillRect(px, py + 24, tile, 8);
     ctx.fillStyle = "#7ed3dc";
     if ((x + y + Math.floor(world.tick / 30)) % 3 === 0) ctx.fillRect(px + 5, py + 10, 18, 3);
-    if (type === "river") {
+    if (type === "channel") {
       ctx.fillStyle = "#8ee2e6";
       ctx.fillRect(px + ((world.tick + x * 9) % 18), py + 17, 10, 2);
       ctx.fillStyle = "#2f806f";
@@ -1143,23 +1181,29 @@ function drawPlant(plant) {
   const x = Math.round(plant.x);
   const y = Math.round(plant.y);
   const colors = {
-    bluecap: plant.bloom ? "#5d8edb" : "#78a95e",
-    sunbean: plant.bloom ? "#e9c849" : "#85b85d",
-    puffroot: plant.bloom ? "#f0e4d7" : "#7fb36a"
+    emberglass: plant.bloom ? "#ff915f" : "#c94d45",
+    moonsalt: plant.bloom ? "#dfe7ff" : "#8da1cf",
+    verdigris: plant.bloom ? "#58d08c" : "#4e9f75"
   };
-  ctx.fillStyle = "#2f653f";
-  ctx.fillRect(x - 3, y + 3, 6, 9);
-  ctx.fillStyle = "#427a43";
-  ctx.fillRect(x - 2, y + 4, 4, 8);
-  ctx.fillRect(x - 6, y + 7, 4, 2);
-  ctx.fillRect(x + 2, y + 5, 5, 2);
-  ctx.fillStyle = "#324437";
-  ctx.fillRect(x - 5, y - 5, 10, 10);
+  ctx.fillStyle = "rgba(35, 31, 42, 0.24)";
+  ctx.fillRect(x - 9, y + 8, 18, 5);
+  ctx.fillStyle = "#3d3442";
+  ctx.fillRect(x - 7, y - 8, 14, 20);
+  ctx.fillStyle = "#d7f4f2";
+  ctx.fillRect(x - 5, y - 6, 10, 16);
   ctx.fillStyle = colors[plant.species];
-  const size = 4 + Math.floor(plant.age * 6);
-  ctx.fillRect(x - size / 2, y - size / 2, size, size);
+  const size = 5 + Math.floor(plant.age * 7);
+  ctx.fillRect(x - 4, y + 4 - size, 8, size);
+  ctx.fillStyle = "rgba(255,255,255,0.52)";
+  ctx.fillRect(x - 3, y - 4, 2, 8);
+  ctx.fillStyle = "#3d3442";
+  ctx.fillRect(x - 6, y - 11, 12, 4);
   ctx.fillStyle = "rgba(255,255,255,0.45)";
-  if (plant.bloom) ctx.fillRect(x - 1, y - 1, 2, 2);
+  if (plant.bloom) {
+    ctx.fillRect(x - 10, y - 18, 4, 4);
+    ctx.fillRect(x + 7, y - 16, 3, 3);
+    ctx.fillRect(x - 1, y - 21, 2, 2);
+  }
 }
 
 function drawArtifact(artifact) {
@@ -1236,11 +1280,11 @@ function drawAgent(agent) {
 
   drawMushroomCap(agent, x, y);
 
-  if (agent.role === "cartographer") {
+  if (agent.role === "glass scribe") {
     ctx.fillStyle = "#f7e6a5";
     ctx.fillRect(x + 8, y - 8, 7, 9);
   }
-  if (agent.role === "songmaker") {
+  if (agent.role === "formula singer") {
     ctx.fillStyle = "#2c2740";
     ctx.fillRect(x + 9, y - 14, 3, 8);
     ctx.fillRect(x + 12, y - 14, 5, 3);
@@ -1323,19 +1367,23 @@ function drawSpeech(x, y, text) {
 }
 
 function drawWeather() {
-  if (world.weather === "rain") {
-    ctx.fillStyle = "rgba(75,111,164,0.38)";
+  if (world.weather === "acid") {
+    ctx.fillStyle = "rgba(113, 211, 120, 0.28)";
     for (let i = 0; i < 80; i += 1) {
       const x = (i * 53 + world.tick * 2) % W;
       const y = (i * 97 + world.tick * 5) % H;
-      ctx.fillRect(x, y, 2, 9);
+      ctx.fillRect(x, y, 3, 7);
     }
   }
-  if (world.weather === "mist") {
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
+  if (world.weather === "vapor") {
+    ctx.fillStyle = "rgba(255,255,255,0.24)";
     for (let i = 0; i < 5; i += 1) {
       ctx.fillRect((world.tick + i * 220) % W - 120, 80 + i * 86, 180, 16);
     }
+  }
+  if (world.weather === "warmth") {
+    ctx.fillStyle = "rgba(255, 193, 97, 0.16)";
+    ctx.fillRect(0, 0, W, H);
   }
 }
 
@@ -1497,7 +1545,7 @@ function aggregateBeliefs() {
     return {
       id: `seed-${outcome.id}`,
       claim: `Agents are gathering first ${outcome.label} predictions.`,
-      domain: index === 0 ? "ecology" : "communication",
+      domain: index === 0 ? "reagents" : "communication",
       parent: "seed",
       confidence: models.reduce((sum, model) => sum + model.confidence, 0) / models.length,
       neural: models.reduce((sum, model) => sum + model.neural, 0) / models.length,
@@ -1512,7 +1560,7 @@ function aggregateBeliefs() {
 
 function dynamicDomains(beliefs) {
   const ids = [...new Set(beliefs.map((belief) => belief.domain))];
-  const fallback = ids.length ? ids : ["ecology", "weather", "social space", "communication"];
+  const fallback = ids.length ? ids : ["reagents", "catalysts", "apparatus", "communication"];
   return fallback.map((id, index) => {
     const claims = beliefs.filter((belief) => belief.domain === id);
     const accepted = claims.filter((belief) => world.discoveries.includes(belief.id)).length;
@@ -1729,7 +1777,7 @@ function setInitialWorldScroll() {
 }
 
 setWeather();
-addLog("The village woke inside a small green world and began asking why plants change.");
+addLog("The alchemy commons opened its benches and began asking which mixtures react.");
 agents.forEach(chooseTarget);
 renderHud();
 renderPanels();
