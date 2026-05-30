@@ -647,11 +647,12 @@ function maybeRequestLlmProposal(agent) {
   })
     .then((response) => response.json())
     .then((proposal) => {
-      agent.llmProposal = validateLlmProposal(proposal);
       if (proposal.error) {
+        agent.llmProposal = null;
         world.llmFailures += 1;
         world.llmOnline = false;
       } else {
+        agent.llmProposal = validateLlmProposal(proposal);
         world.llmOnline = true;
       }
     })
@@ -666,15 +667,62 @@ function maybeRequestLlmProposal(agent) {
 }
 
 function agentLlmState(agent) {
+  const place = terrain[Math.floor(agent.y / tile)]?.[Math.floor(agent.x / tile)] ?? "unknown";
+  const incoming = world.communications
+    .filter((item) => item.to === agent.name)
+    .slice(0, 6)
+    .map((item) => ({
+      from: item.from,
+      claim: item.claim,
+      confidence: Number(item.confidence.toFixed(2)),
+      utility: item.nature,
+      delta: Number(item.delta.toFixed(3))
+    }));
+  const recentObservations = agent.memory
+    .filter((item) => item.type === "observation")
+    .slice(0, 8)
+    .map((item) => ({
+      facts: item.facts,
+      predicted: Number(item.prediction.toFixed(2)),
+      target: item.target,
+      reward: Number(item.reward.toFixed(2))
+    }));
+  const nearbyReagents = plants
+    .filter((plant) => distance(agent, plant) < 180)
+    .slice(0, 8)
+    .map((plant) => ({
+      reagent: plant.species,
+      room: terrain[Math.floor(plant.y / tile)]?.[Math.floor(plant.x / tile)] ?? "unknown",
+      reacted: plant.bloom
+    }));
+  const recentLlm = agent.retrievedTokens.filter((token) => token.startsWith("llm|")).slice(0, 5);
   return {
+    scenario: "Agents in a sealed alchemy lab learn hidden reagent/catalyst/apparatus laws through experiments and teaching.",
     name: agent.name,
     role: agent.role,
     day: world.day,
     cycle: seasons[world.seasonIndex],
     ambient: world.weather,
     action: agent.action,
-    place: terrain[Math.floor(agent.y / tile)]?.[Math.floor(agent.x / tile)] ?? "unknown",
+    place,
+    current_policy_weights: Object.fromEntries(Object.entries(agent.policy).map(([key, value]) => [key, Number(value.toFixed(2))])),
+    current_predictors: {
+      reaction: {
+        confidence: Number(agent.models.reaction.confidence.toFixed(2)),
+        neural: Number(agent.models.reaction.neural.toFixed(2)),
+        evidence: agent.models.reaction.evidence
+      },
+      social: {
+        confidence: Number(agent.models.social.confidence.toFixed(2)),
+        neural: Number(agent.models.social.neural.toFixed(2)),
+        evidence: agent.models.social.evidence
+      }
+    },
+    recent_observations: recentObservations,
+    incoming_communication: incoming,
+    nearby_reagents: nearbyReagents,
     memory_tokens: agent.retrievedTokens.slice(0, 12),
+    recent_llm_proposals: recentLlm,
     top_rules: world.minedRules.slice(0, 5).map((rule) => ({
       claim: rule.claim,
       confidence: Number(rule.confidence.toFixed(2)),
@@ -1075,94 +1123,168 @@ function drawInteriorBuilding(site) {
   const y = site.y * tile;
   const w = site.w * tile;
   const h = site.h * tile;
-  const floor = {
-    townHall: "#d7aa72",
-    lab: "#d6e0df",
-    archive: "#cba97a",
-    workshop: "#c79a62",
-    cafe: "#dcb26f",
-    school: "#d7bf7a",
-    greenhouse: "#bfe4cf",
-    market: "#d6b96b",
-    theater: "#c99abb"
-  }[site.type] ?? "#d6b275";
-
-  ctx.fillStyle = "rgba(48,42,44,0.22)";
-  ctx.fillRect(x + 7, y + h - 2, w - 2, 9);
-  ctx.fillStyle = "#5a4738";
+  ctx.fillStyle = "rgba(5, 12, 22, 0.34)";
+  ctx.fillRect(x + 6, y + h - 1, w, 10);
+  ctx.fillStyle = "#151b25";
   ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = site.wall;
-  ctx.fillRect(x + 4, y + 4, w - 8, h - 8);
-  ctx.fillStyle = floor;
-  ctx.fillRect(x + 10, y + 14, w - 20, h - 24);
-
-  ctx.fillStyle = "rgba(92, 62, 42, 0.18)";
-  for (let px = x + 16; px < x + w - 12; px += 16) ctx.fillRect(px, y + 16, 2, h - 28);
-  for (let py = y + 22; py < y + h - 12; py += 16) ctx.fillRect(x + 12, py, w - 24, 2);
-
-  ctx.fillStyle = site.roof;
-  ctx.fillRect(x - 2, y - 7, w + 4, 12);
-  ctx.fillStyle = shade(site.roof, -24);
-  ctx.fillRect(x - 2, y + 2, w + 4, 5);
-  ctx.fillStyle = "#f6f1d2";
+  ctx.fillStyle = "#4f5868";
+  ctx.fillRect(x, y, w, 8);
+  ctx.fillRect(x, y + h - 8, w, 8);
+  ctx.fillRect(x, y, 8, h);
+  ctx.fillRect(x + w - 8, y, 8, h);
+  ctx.fillStyle = "#232b37";
+  ctx.fillRect(x + 8, y + 8, w - 16, h - 16);
+  ctx.fillStyle = "#303948";
+  for (let px = x + 16; px < x + w - 14; px += 24) ctx.fillRect(px, y + 13, 2, h - 26);
+  for (let py = y + 18; py < y + h - 14; py += 24) ctx.fillRect(x + 13, py, w - 26, 2);
+  ctx.fillStyle = "rgba(18, 225, 238, 0.82)";
+  ctx.fillRect(x + 12, y + 10, w - 24, 2);
+  ctx.fillRect(x + 12, y + h - 12, w - 24, 2);
+  ctx.fillStyle = "#07151d";
+  ctx.fillRect(x + w / 2 - 56, y + 9, 112, 18);
+  ctx.strokeStyle = "#12e1ee";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + w / 2 - 56, y + 9, 112, 18);
+  ctx.fillStyle = "#19f3ef";
   ctx.font = "10px monospace";
   ctx.textAlign = "center";
-  ctx.fillText(site.name.slice(0, 14), x + w / 2, y + 2);
+  ctx.fillText(site.name.toUpperCase().slice(0, 18), x + w / 2, y + 22);
 
   drawFurniture(site, x, y, w, h);
-  ctx.fillStyle = "#6b4b37";
-  ctx.fillRect(x + w / 2 - 8, y + h - 12, 16, 10);
+  ctx.fillStyle = "#111822";
+  ctx.fillRect(x + w / 2 - 10, y + h - 11, 20, 10);
+  ctx.fillStyle = "#22cff0";
+  ctx.fillRect(x + w / 2 - 8, y + h - 10, 16, 2);
 }
 
 function drawFurniture(site, x, y, w, h) {
   if (site.type === "lab") {
-    drawCounters(x, y, w, h, "#88a9c9");
-    for (let i = 0; i < 4; i += 1) drawTable(x + 26 + i * 34, y + 45, "#dce8ec", "#68a7b8");
-    drawShelf(x + w - 36, y + 28, "#9fb2be");
+    drawConsoleBank(x + 18, y + 34, 4);
+    drawReactionTank(x + w - 58, y + 36, "#25f2ad");
+    drawHoloTable(x + w / 2 - 18, y + h - 48, "#32d7ff");
     return;
   }
   if (site.type === "townHall") {
-    drawTable(x + w / 2 - 18, y + 42, "#eed084", "#9d6a44");
-    drawBenchRow(x + 18, y + h - 42, 4);
-    drawBenchRow(x + 18, y + h - 28, 4);
+    drawHoloTable(x + w / 2 - 20, y + 44, "#36e5ff");
+    drawConsoleBank(x + 18, y + h - 44, 3);
     return;
   }
   if (site.type === "archive") {
-    for (let i = 0; i < 5; i += 1) drawShelf(x + 14 + i * 26, y + 26, "#8e6348");
-    drawTable(x + w - 48, y + h - 42, "#f1dfaa", "#8b6544");
+    for (let i = 0; i < 5; i += 1) drawServerRack(x + 16 + i * 28, y + 34);
+    drawHoloGlobe(x + w - 46, y + h - 52, "#31cfff");
     return;
   }
   if (site.type === "cafe") {
-    drawCounters(x, y, w, h, "#b57b4b");
-    for (let i = 0; i < 4; i += 1) drawTable(x + 22 + i * 30, y + 55, "#f0d38d", "#7b573d");
+    drawConsoleBank(x + 18, y + 34, 3);
+    drawHoloTable(x + w - 54, y + 54, "#27e8a6");
     return;
   }
   if (site.type === "school") {
-    ctx.fillStyle = "#4f7e55";
-    ctx.fillRect(x + 14, y + 22, w - 28, 12);
-    for (let row = 0; row < 3; row += 1) drawBenchRow(x + 20, y + 48 + row * 22, 4);
+    drawConsoleBank(x + 18, y + 36, 4);
+    drawHoloBoard(x + 20, y + 28, w - 40);
     return;
   }
   if (site.type === "greenhouse") {
-    ctx.fillStyle = "rgba(225,255,247,0.45)";
-    for (let i = 0; i < 5; i += 1) ctx.fillRect(x + 14 + i * 28, y + 18, 5, h - 32);
-    for (let i = 0; i < 9; i += 1) drawPlanter(x + 18 + (i % 3) * 42, y + 36 + Math.floor(i / 3) * 24);
+    for (let i = 0; i < 3; i += 1) drawReactionTank(x + 22 + i * 46, y + 36, i % 2 ? "#8d6cff" : "#25f2ad");
+    drawConsoleBank(x + 20, y + h - 42, 4);
     return;
   }
   if (site.type === "market") {
-    for (let i = 0; i < 4; i += 1) drawStall(x + 16 + i * 34, y + 36, i % 2 ? "#d85d63" : "#6aa86c");
-    drawCounters(x, y + 54, w, h - 54, "#b88752");
+    for (let i = 0; i < 4; i += 1) drawReagentCrate(x + 18 + i * 34, y + 42, i % 2 ? "#ff965f" : "#62e2ff");
+    drawConsoleBank(x + 18, y + h - 40, 4);
     return;
   }
   if (site.type === "theater") {
-    ctx.fillStyle = "#74485e";
-    ctx.fillRect(x + 14, y + 22, w - 28, 24);
-    ctx.fillStyle = "#e8c15f";
-    ctx.fillRect(x + 23, y + 28, w - 46, 4);
-    for (let row = 0; row < 3; row += 1) drawBenchRow(x + 22, y + 58 + row * 18, 5);
+    drawHoloBoard(x + 18, y + 30, w - 36);
+    drawBenchRow(x + 22, y + h - 42, 5);
+    drawBenchRow(x + 22, y + h - 26, 5);
     return;
   }
-  drawCounters(x, y, w, h, "#b88752");
+  drawConsoleBank(x + 18, y + 34, 3);
+}
+
+function drawConsoleBank(x, y, count) {
+  for (let i = 0; i < count; i += 1) {
+    const px = x + i * 30;
+    ctx.fillStyle = "#101923";
+    ctx.fillRect(px, y, 22, 28);
+    ctx.fillStyle = "#263747";
+    ctx.fillRect(px + 2, y + 3, 18, 22);
+    ctx.fillStyle = "#0fd0ff";
+    ctx.fillRect(px + 5, y + 6, 12, 4);
+    ctx.fillStyle = "#28f0a1";
+    ctx.fillRect(px + 5, y + 14, 5, 3);
+    ctx.fillStyle = "#8b66ff";
+    ctx.fillRect(px + 12, y + 14, 5, 3);
+  }
+}
+
+function drawServerRack(x, y) {
+  ctx.fillStyle = "#0f1720";
+  ctx.fillRect(x, y, 18, 46);
+  ctx.fillStyle = "#273444";
+  ctx.fillRect(x + 2, y + 2, 14, 42);
+  for (let i = 0; i < 5; i += 1) {
+    ctx.fillStyle = i % 2 ? "#19e8f4" : "#326bff";
+    ctx.fillRect(x + 5, y + 6 + i * 7, 8, 2);
+  }
+}
+
+function drawReactionTank(x, y, color) {
+  ctx.fillStyle = "#0d1420";
+  ctx.fillRect(x - 5, y + 4, 34, 48);
+  ctx.fillStyle = "#526071";
+  ctx.fillRect(x, y, 24, 54);
+  ctx.fillStyle = "rgba(210, 247, 255, 0.35)";
+  ctx.fillRect(x + 4, y + 6, 16, 40);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 6, y + 18, 12, 25);
+  ctx.fillStyle = "rgba(255,255,255,0.55)";
+  ctx.fillRect(x + 8, y + 9, 4, 29);
+  ctx.fillStyle = "#18e4ff";
+  ctx.fillRect(x + 2, y - 4, 20, 4);
+}
+
+function drawHoloTable(x, y, color) {
+  ctx.fillStyle = "#101923";
+  ctx.fillRect(x - 4, y + 12, 48, 24);
+  ctx.fillStyle = "#2c4052";
+  ctx.fillRect(x, y + 8, 40, 22);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 10, y + 2, 20, 6);
+  ctx.fillStyle = "rgba(42, 221, 255, 0.36)";
+  ctx.fillRect(x + 7, y - 8, 26, 16);
+}
+
+function drawHoloBoard(x, y, w) {
+  ctx.fillStyle = "#07151d";
+  ctx.fillRect(x, y, w, 22);
+  ctx.strokeStyle = "#12e1ee";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, 22);
+  ctx.fillStyle = "#13e7f0";
+  for (let i = 0; i < 5; i += 1) ctx.fillRect(x + 10 + i * 22, y + 7 + (i % 2) * 5, 14, 2);
+}
+
+function drawHoloGlobe(x, y, color) {
+  ctx.fillStyle = "#101923";
+  ctx.fillRect(x - 14, y + 12, 48, 22);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x + 10, y + 8, 18, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.fillRect(x + 3, y - 2, 16, 3);
+  ctx.fillRect(x - 2, y + 9, 24, 2);
+}
+
+function drawReagentCrate(x, y, color) {
+  ctx.fillStyle = "#171e27";
+  ctx.fillRect(x, y, 24, 24);
+  ctx.fillStyle = "#3a4553";
+  ctx.fillRect(x + 3, y + 3, 18, 18);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 7, y + 7, 10, 10);
 }
 
 function drawCounters(x, y, w, h, color) {

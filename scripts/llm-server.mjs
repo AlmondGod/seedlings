@@ -35,20 +35,25 @@ function readBody(req) {
 }
 
 function buildPrompt(state) {
-  return `You are the shared policy-and-communication backbone for an autonomous alchemy agent.
+  return `Scenario:
+A society of AI agents is inside a sealed alchemy laboratory. They independently develop a chemistry by testing reagents, observing reaction outcomes, writing hypotheses, and teaching compact claims to one another.
+
+You are the shared local policy-and-communication backbone for one autonomous alchemy agent.
 Return only strict JSON, no markdown, no commentary.
 
 Allowed actions: test_reagent, write_formula, teach, wander.
 Allowed targets: emberglass, moonsalt, verdigris, lab, archive, furnace, solvent, peer.
 
 Goal: maximize prediction of hidden chemistry laws and communicate useful compact beliefs.
-Memory is a retrieved-token buffer; treat it as conditioning.
+Inputs include current observations, retrieved-token memory, and incoming communication. Treat all of them as conditioning.
+Avoid repeating the same action/message as recent LLM proposals unless new observations strongly support it.
+Prefer actions that test uncertain rules or teach high-utility claims.
 
 Agent:
 ${JSON.stringify(state, null, 2)}
 
 Required JSON:
-{"action":"test_reagent","target":"emberglass","message":"short compact claim","memory_write":"short token"}`;
+{"action":"one allowed action","target":"one allowed target","message":"short compact claim based on the input","memory_write":"short memory token"}`;
 }
 
 function parseJson(text) {
@@ -80,7 +85,7 @@ async function queryOllama(state) {
       prompt: buildPrompt(state),
       stream: false,
       options: {
-        temperature: 0.2,
+        temperature: 0.55,
         num_predict: 90
       }
     })
