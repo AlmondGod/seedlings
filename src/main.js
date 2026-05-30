@@ -17,7 +17,9 @@ const ui = {
   consensus: document.querySelector("#consensus"),
   overall: document.querySelector("#overall"),
   reward: document.querySelector("#reward"),
-  memeToggle: document.querySelector("#memeToggle")
+  memeToggle: document.querySelector("#memeToggle"),
+  llmToggle: document.querySelector("#llmToggle"),
+  llmStatus: document.querySelector("#llmStatus")
 };
 
 const rand = (min, max) => min + Math.random() * (max - min);
@@ -41,6 +43,10 @@ const world = {
   minedRules: [],
   communications: [],
   memeVisualization: false,
+  llmEnabled: false,
+  llmOnline: false,
+  llmRequests: 0,
+  llmFailures: 0,
   memeEdges: [],
   history: [],
   lastHistoryTick: -1,
@@ -50,6 +56,11 @@ const world = {
 
 ui.memeToggle?.addEventListener("change", () => {
   world.memeVisualization = ui.memeToggle.checked;
+});
+
+ui.llmToggle?.addEventListener("change", () => {
+  world.llmEnabled = ui.llmToggle.checked;
+  updateLlmStatus();
 });
 
 const seasons = ["Dawn", "Noon", "Dusk", "Midnight"];
@@ -206,25 +217,32 @@ const landmarks = [
 const terrain = Array.from({ length: rows }, (_, y) =>
   Array.from({ length: cols }, (_, x) => {
     const edge = x < 1 || y < 1 || x > cols - 2 || y > rows - 2;
-    const riverY = 6 + Math.round(Math.sin(x * 0.34) * 2.2);
-    if (edge) return "trees";
-    if (x > 1 && x < cols - 2 && Math.abs(y - riverY) <= 1) return "channel";
-    if ((x - 52) ** 2 + (y - 8) ** 2 < 18) return "basin";
-    if ((x - 50) ** 2 + (y - 32) ** 2 < 11) return "basin";
-    if (x > 2 && x < 10 && y > 12 && y < 18) return "bench";
-    if (x > 9 && x < 17 && y > 26 && y < 33) return "bench";
-    if (x > 12 && x < 31 && y > 8 && y < 19) return "furnace";
-    if (x > 30 && x < 52 && y > 22 && y < 35) return "archive";
+    if (edge) return "wall";
+    if ((x - 52) ** 2 + (y - 10) ** 2 < 12 || (x - 5) ** 2 + (y - 28) ** 2 < 10) return "basin";
+    if ((x >= 5 && x <= 54 && y === 6) || (x === 50 && y >= 6 && y <= 33)) return "channel";
+    if (x >= 3 && x <= 10 && y >= 10 && y <= 17) return "bench";
+    if (x >= 9 && x <= 17 && y >= 27 && y <= 34) return "bench";
+    if (x >= 15 && x <= 29 && y >= 6 && y <= 17) return "furnace";
+    if (x >= 33 && x <= 54 && y >= 5 && y <= 17) return "archive";
+    if (x >= 41 && x <= 56 && y >= 25 && y <= 35) return "archive";
+    if ((x + y) % 17 === 0 && (
+      (x >= 2 && x <= 12 && y >= 3 && y <= 18) ||
+      (x >= 21 && x <= 38 && y >= 23 && y <= 36)
+    )) return "crystals";
     if (
-      (x > 6 && x < 53 && (y === 20 || y === 21)) ||
-      (x > 10 && x < 55 && y === 12) ||
-      (x === 22 && y > 7 && y < 36) ||
-      (x === 40 && y > 8 && y < 36) ||
-      (x === 7 && y > 7 && y < 22) ||
-      (y > 6 && y < 10 && x > 2 && x < 8)
+      (x >= 2 && x <= 12 && y >= 3 && y <= 18) ||
+      (x >= 14 && x <= 30 && y >= 4 && y <= 18) ||
+      (x >= 32 && x <= 55 && y >= 3 && y <= 18) ||
+      (x >= 2 && x <= 19 && y >= 23 && y <= 36) ||
+      (x >= 21 && x <= 38 && y >= 23 && y <= 36) ||
+      (x >= 40 && x <= 57 && y >= 23 && y <= 36)
+    ) return "floor";
+    if (
+      (x >= 6 && x <= 53 && y >= 19 && y <= 21) ||
+      (x >= 20 && x <= 23 && y >= 6 && y <= 36) ||
+      (x >= 38 && x <= 41 && y >= 6 && y <= 36)
     ) return "path";
-    if ((x + y) % 17 === 0) return "crystals";
-    return "floor";
+    return "wall";
   })
 );
 
@@ -235,7 +253,7 @@ for (let i = 0; i < 90; i += 1) {
   let x = inGarden ? rand(gardenZone.x1, gardenZone.x2) * tile : rand(2, cols - 3) * tile;
   let y = inGarden ? rand(gardenZone.y1, gardenZone.y2) * tile : rand(2, rows - 3) * tile;
   let guard = 0;
-  while (!inGarden && ["channel", "basin", "trees"].includes(terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)]) && guard < 20) {
+  while (!inGarden && ["channel", "basin", "wall"].includes(terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)]) && guard < 20) {
     x = rand(2, cols - 3) * tile;
     y = rand(2, rows - 3) * tile;
     guard += 1;
@@ -336,6 +354,9 @@ const agents = [
     readBias: rand(0.1, 0.35)
   },
   lastAction: "wandering",
+  llmProposal: null,
+  llmPending: false,
+  nextLlmTick: 0,
   currentMeme: {
     nature: "black",
     color: memeColors.black,
@@ -579,6 +600,12 @@ function chooseTarget(agent) {
     return;
   }
 
+  maybeRequestLlmProposal(agent);
+  if (agent.llmProposal && applyLlmProposal(agent, agent.llmProposal)) {
+    agent.llmProposal = null;
+    return;
+  }
+
   const action = chooseWeightedAction(agent);
   agent.lastAction = action;
   if (action === "observing") {
@@ -603,6 +630,116 @@ function chooseTarget(agent) {
     ]);
     setTarget(agent, site.x * tile, site.y * tile, site.action);
   }
+}
+
+function maybeRequestLlmProposal(agent) {
+  if (!world.llmEnabled || agent.llmPending || world.tick < agent.nextLlmTick) return;
+  if (world.tick % 240 !== (agent.id * 17) % 240) return;
+  agent.llmPending = true;
+  agent.nextLlmTick = world.tick + 900;
+  world.llmRequests += 1;
+  updateLlmStatus();
+
+  fetch("/agent-action", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(agentLlmState(agent))
+  })
+    .then((response) => response.json())
+    .then((proposal) => {
+      agent.llmProposal = validateLlmProposal(proposal);
+      if (proposal.error) {
+        world.llmFailures += 1;
+        world.llmOnline = false;
+      } else {
+        world.llmOnline = true;
+      }
+    })
+    .catch(() => {
+      world.llmFailures += 1;
+      world.llmOnline = false;
+    })
+    .finally(() => {
+      agent.llmPending = false;
+      updateLlmStatus();
+    });
+}
+
+function agentLlmState(agent) {
+  return {
+    name: agent.name,
+    role: agent.role,
+    day: world.day,
+    cycle: seasons[world.seasonIndex],
+    ambient: world.weather,
+    action: agent.action,
+    place: terrain[Math.floor(agent.y / tile)]?.[Math.floor(agent.x / tile)] ?? "unknown",
+    memory_tokens: agent.retrievedTokens.slice(0, 12),
+    top_rules: world.minedRules.slice(0, 5).map((rule) => ({
+      claim: rule.claim,
+      confidence: Number(rule.confidence.toFixed(2)),
+      evidence: rule.evidence
+    })),
+    allowed_actions: ["test_reagent", "write_formula", "teach", "wander"],
+    allowed_targets: ["emberglass", "moonsalt", "verdigris", "lab", "archive", "furnace", "solvent", "peer"]
+  };
+}
+
+function validateLlmProposal(proposal) {
+  const validActions = ["test_reagent", "write_formula", "teach", "wander"];
+  const validTargets = ["emberglass", "moonsalt", "verdigris", "lab", "archive", "furnace", "solvent", "peer"];
+  return {
+    action: validActions.includes(proposal?.action) ? proposal.action : "wander",
+    target: validTargets.includes(proposal?.target) ? proposal.target : "lab",
+    message: String(proposal?.message ?? "testing formula").slice(0, 96),
+    memory_write: String(proposal?.memory_write ?? "llm|formula").slice(0, 96)
+  };
+}
+
+function applyLlmProposal(agent, proposal) {
+  agent.retrievedTokens.unshift(`llm|${proposal.memory_write}`);
+  agent.retrievedTokens = agent.retrievedTokens.slice(0, 32);
+  if (proposal.message) speak(agent, proposal.message);
+
+  if (proposal.action === "test_reagent") {
+    const plant = nearestReagent(proposal.target, agent) ?? pick(plants);
+    setTarget(agent, plant.x + rand(-18, 18), plant.y + rand(-18, 18), `LLM testing ${labelFeature(`species=${plant.species}`)}`);
+    agent.lastAction = "observing";
+    return true;
+  }
+  if (proposal.action === "write_formula") {
+    const site = proposal.target === "archive" ? landmarks.find((item) => item.type === "archive") : landmarks.find((item) => item.type === "lab");
+    setTarget(agent, (site.x + site.w / 2) * tile, (site.y + site.h + 0.35) * tile, "LLM writing formula");
+    agent.lastAction = "researching";
+    return true;
+  }
+  if (proposal.action === "teach") {
+    const friend = nearestAgent(agent) ?? pick(agents.filter((candidate) => candidate !== agent));
+    setTarget(agent, friend.x + rand(-28, 28), friend.y + rand(-28, 28), "LLM teaching formula");
+    agent.lastAction = "talking";
+    return true;
+  }
+  return false;
+}
+
+function nearestReagent(species, agent) {
+  const candidates = plants.filter((plant) => plant.species === species);
+  return candidates.sort((a, b) => distance(agent, a) - distance(agent, b))[0];
+}
+
+function nearestAgent(agent) {
+  return agents
+    .filter((candidate) => candidate !== agent)
+    .sort((a, b) => distance(agent, a) - distance(agent, b))[0];
+}
+
+function updateLlmStatus() {
+  if (!ui.llmStatus) return;
+  if (!world.llmEnabled) {
+    ui.llmStatus.textContent = "offline";
+    return;
+  }
+  ui.llmStatus.textContent = world.llmOnline ? "online" : world.llmRequests ? "fallback" : "waiting";
 }
 
 function setTarget(agent, x, y, action) {
@@ -636,7 +773,7 @@ function isWalkablePixel(x, y) {
   if (isBuildingShellPixel(x, y)) return false;
 
   const terrainType = terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)];
-  return !["channel", "basin", "trees"].includes(terrainType);
+  return !["channel", "basin", "wall"].includes(terrainType);
 }
 
 function isDockPixel(x, y) {
@@ -829,7 +966,7 @@ function drawTile(x, y, type) {
     channel: "#5faed0",
     basin: "#5aaec8",
     archive: "#cdb579",
-    trees: "#675d68"
+    wall: "#675d68"
   };
   ctx.fillStyle = palette[type];
   ctx.fillRect(px, py, tile, tile);
@@ -853,17 +990,18 @@ function drawTile(x, y, type) {
     }
   }
 
-  if (type === "trees") {
+  if (type === "wall") {
     ctx.fillStyle = "#3f3543";
-    ctx.fillRect(px + 7, py + 7, 18, 19);
+    ctx.fillRect(px, py, tile, tile);
     ctx.fillStyle = "#6d6270";
-    ctx.fillRect(px + 5, py + 4, 22, 14);
+    ctx.fillRect(px + 2, py + 2, 28, 12);
     ctx.fillStyle = "#9c8f9f";
-    ctx.fillRect(px + 10, py + 2, 12, 8);
+    ctx.fillRect(px + 4, py + 4, 11, 4);
+    ctx.fillRect(px + 18, py + 7, 9, 3);
     ctx.fillStyle = "#514656";
-    ctx.fillRect(px + 13, py + 20, 6, 10);
+    ctx.fillRect(px, py + 23, tile, 9);
     ctx.fillStyle = "rgba(255,255,255,0.18)";
-    ctx.fillRect(px + 9, py + 7, 5, 3);
+    ctx.fillRect(px + 5, py + 3, 5, 3);
   }
   if (type === "path") {
     ctx.fillStyle = "#caa96d";

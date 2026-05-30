@@ -84,6 +84,14 @@ p {
   font-size: 1.24rem;
 }
 
+.compact-clock {
+  min-width: 112px;
+}
+
+.compact-clock strong {
+  font-size: 0.92rem;
+}
+
 .clock span {
   font-size: 0.78rem;
   text-transform: uppercase;
