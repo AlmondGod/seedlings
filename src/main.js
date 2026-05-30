@@ -186,32 +186,18 @@ function isNearBuilding(x, y) {
   });
 }
 
-const houses = [
-  { id: "mika", x: 13, y: 13, w: 4, h: 3, roof: "#d96f5d", wall: "#ffe2a8", owner: "Mika" },
-  { id: "taro", x: 18, y: 13, w: 4, h: 3, roof: "#6fa765", wall: "#f6dba6", owner: "Taro" },
-  { id: "nori", x: 13, y: 17, w: 4, h: 3, roof: "#5d8edb", wall: "#f7e4bb", owner: "Nori" },
-  { id: "piko", x: 18, y: 17, w: 4, h: 3, roof: "#e4b44e", wall: "#ffe1b5", owner: "Piko" },
-  { id: "sumi", x: 23, y: 17, w: 4, h: 3, roof: "#9f80bd", wall: "#f4d8bb", owner: "Sumi" },
-  { id: "ren", x: 28, y: 17, w: 4, h: 3, roof: "#58aeb8", wall: "#f3ddb8", owner: "Ren" },
-  { id: "kiko", x: 33, y: 23, w: 4, h: 3, roof: "#e080a4", wall: "#f6ddbd", owner: "Kiko" },
-  { id: "bo", x: 38, y: 23, w: 4, h: 3, roof: "#96714b", wall: "#efd7ad", owner: "Bo" },
-  { id: "yui", x: 43, y: 23, w: 4, h: 3, roof: "#f08f54", wall: "#f5dfb9", owner: "Yui" },
-  { id: "aki", x: 48, y: 23, w: 4, h: 3, roof: "#74b765", wall: "#efe0b9", owner: "Aki" }
-];
+const houses = [];
 
 const landmarks = [
-  { type: "townHall", name: "Commons Hall", x: 13, y: 8, w: 5, h: 4, roof: "#8f6fd6", wall: "#efe0c6" },
-  { type: "lab", name: "Synthesis Lab", x: 24, y: 12, w: 6, h: 4, roof: "#5f8fc9", wall: "#e8ece4" },
-  { type: "archive", name: "Formula Archive", x: 23, y: 8, w: 5, h: 3, roof: "#a979bd", wall: "#efe2c7" },
-  { type: "workshop", name: "Glassworks", x: 4, y: 13, w: 3, h: 2, roof: "#d89b4a", wall: "#ead0a3" },
-  { type: "observatory", name: "Fume Tower", x: 49, y: 4, w: 2, h: 2, roof: "#4f6fb4", wall: "#d7e3ec" },
-  { type: "shrine", name: "Catalyst Shrine", x: 5, y: 8, w: 2, h: 3, roof: "#d85d63", wall: "#f4cc72" },
-  { type: "dock", name: "Solvent Bath", x: 3, y: 5, w: 3, h: 2, roof: "#5aaec8", wall: "#c99b62" },
-  { type: "cafe", name: "Memory Refectory", x: 34, y: 9, w: 5, h: 3, roof: "#d28a4d", wall: "#f0d09e" },
-  { type: "school", name: "Apprentice Hall", x: 45, y: 12, w: 5, h: 4, roof: "#6aa86c", wall: "#e8dfbc" },
-  { type: "greenhouse", name: "Distillery", x: 10, y: 27, w: 6, h: 4, roof: "#6fbfb2", wall: "#d8eee2" },
-  { type: "market", name: "Reagent Exchange", x: 31, y: 30, w: 6, h: 4, roof: "#d8b34d", wall: "#efddb3" },
-  { type: "theater", name: "Lecture Theater", x: 45, y: 28, w: 6, h: 4, roof: "#cc6d8e", wall: "#ead5c5" }
+  { type: "biotech", name: "BIOTECH LAB", x: 2, y: 1, w: 19, h: 9 },
+  { type: "library", name: "DATA LIBRARY", x: 39, y: 1, w: 19, h: 9 },
+  { type: "robotics", name: "ROBOTICS LAB", x: 2, y: 11, w: 17, h: 9 },
+  { type: "energy", name: "ENERGY ANALYSIS", x: 41, y: 11, w: 17, h: 9 },
+  { type: "synthesis", name: "ADVANCED SYNTHESIS", x: 2, y: 24, w: 18, h: 11 },
+  { type: "materials", name: "MATERIALS RESEARCH", x: 40, y: 24, w: 18, h: 11 },
+  { type: "hub", name: "COLLABORATION HUB", x: 22, y: 12, w: 16, h: 10 },
+  { type: "gate", name: "", x: 24, y: 1, w: 12, h: 8 },
+  { type: "garden", name: "", x: 23, y: 25, w: 14, h: 12 }
 ];
 
 const terrain = Array.from({ length: rows }, (_, y) =>
@@ -368,11 +354,11 @@ const agents = [
 }));
 
 const artifacts = [
-  { type: "blackboard", x: 25.4 * tile, y: 14.2 * tile, text: "?", idea: "questions" },
-  { type: "map", x: 14.5 * tile, y: 9.8 * tile, text: "map", idea: "paths" },
-  { type: "specimen", x: 24.6 * tile, y: 13.2 * tile, text: "jar", idea: "biology" },
-  { type: "bell", x: 14.5 * tile, y: 8.8 * tile, text: "bell", idea: "council" },
-  { type: "rod", x: 4.2 * tile, y: 6.1 * tile, text: "fish", idea: "river" }
+  { type: "blackboard", x: 30.4 * tile, y: 15.1 * tile, text: "?", idea: "questions" },
+  { type: "map", x: 46.5 * tile, y: 5.8 * tile, text: "db", idea: "library" },
+  { type: "specimen", x: 7.6 * tile, y: 5.4 * tile, text: "jar", idea: "biology" },
+  { type: "bell", x: 29.8 * tile, y: 19.2 * tile, text: "hub", idea: "teaching" },
+  { type: "chip", x: 9.2 * tile, y: 15.1 * tile, text: "bot", idea: "robotics" }
 ];
 
 function addLog(text) {
@@ -595,8 +581,9 @@ function chooseWeightedAction(agent) {
 function chooseTarget(agent) {
   const hour = (world.tick % 1440) / 60;
   if (hour < 6 || hour > 21) {
-    const home = houses[agent.id % houses.length];
-    setTarget(agent, (home.x + home.w / 2) * tile, (home.y + home.h + 0.12) * tile, "sleepwalking home");
+    const restZones = landmarks.filter((site) => ["library", "hub", "synthesis", "materials"].includes(site.type));
+    const zone = restZones[agent.id % restZones.length];
+    setTarget(agent, (zone.x + zone.w / 2) * tile, (zone.y + zone.h / 2) * tile, "resting between lab shifts");
     return;
   }
 
@@ -816,45 +803,20 @@ function nearestWalkablePoint(x, y) {
 
 function isWalkablePixel(x, y) {
   if (x < tile || y < tile || x > W - tile || y > H - tile) return false;
-  if (isDockPixel(x, y)) return true;
-  if (isEntrancePixel(x, y)) return true;
-  if (isBuildingShellPixel(x, y)) return false;
-
   const terrainType = terrain[Math.floor(y / tile)]?.[Math.floor(x / tile)];
   return !["channel", "basin", "wall"].includes(terrainType);
 }
 
 function isDockPixel(x, y) {
-  const dock = landmarks.find((site) => site.type === "dock");
-  if (!dock) return false;
-  const left = dock.x * tile - 8;
-  const top = dock.y * tile + 5;
-  const right = (dock.x + dock.w) * tile + 8;
-  const bottom = dock.y * tile + 36;
-  return x >= left && x <= right && y >= top && y <= bottom;
+  return false;
 }
 
 function isEntrancePixel(x, y) {
-  return [...houses, ...landmarks.filter((site) => !["dock", "shrine", "observatory"].includes(site.type))]
-    .some((site) => {
-      const center = (site.x + site.w / 2) * tile;
-      const left = center - 18;
-      const right = center + 18;
-      const top = (site.y + site.h) * tile - 24;
-      const bottom = (site.y + site.h) * tile + 7;
-      return x >= left && x <= right && y >= top && y <= bottom;
-    });
+  return false;
 }
 
 function isBuildingShellPixel(x, y) {
-  return [...houses, ...landmarks.filter((site) => site.type !== "dock")]
-    .some((site) => {
-      const left = site.x * tile - 2;
-      const top = site.y * tile - 8;
-      const right = (site.x + site.w) * tile + 2;
-      const bottom = (site.y + site.h) * tile + 3;
-      return x >= left && x <= right && y >= top && y <= bottom;
-    });
+  return false;
 }
 
 function moveAgent(agent) {
@@ -1006,202 +968,383 @@ function drawTile(x, y, type) {
   const px = x * tile;
   const py = y * tile;
   const palette = {
-    floor: "#b9b3a5",
-    crystals: "#c7b4d8",
-    bench: "#9a7651",
-    path: "#d8bf7a",
-    furnace: "#b77c57",
-    channel: "#5faed0",
-    basin: "#5aaec8",
-    archive: "#cdb579",
-    wall: "#675d68"
+    floor: "#e8edf0",
+    crystals: "#d8f7ff",
+    bench: "#d6dee7",
+    path: "#edf2f5",
+    furnace: "#e4e8ed",
+    channel: "#aeeaff",
+    basin: "#9ce7ff",
+    archive: "#e6ebf1",
+    wall: "#eef2f7"
   };
-  ctx.fillStyle = palette[type];
+  ctx.fillStyle = palette[type] ?? "#e8edf0";
   ctx.fillRect(px, py, tile, tile);
+  if (type === "wall") drawWallTile(px, py, x, y);
+  else drawFloorTile(px, py, x, y, type);
+}
 
-  ctx.fillStyle = "rgba(255,255,255,0.16)";
-  if ((x * 3 + y + world.day) % 4 === 0) ctx.fillRect(px + 5, py + 6, 4, 4);
-  ctx.fillStyle = "rgba(58, 93, 48, 0.12)";
-  if ((x + y * 2) % 5 === 0) ctx.fillRect(px + 20, py + 18, 6, 3);
-
-  if (type === "floor" || type === "crystals") {
-    ctx.fillStyle = "#8f8791";
-    if ((x + y) % 2 === 0) {
-      ctx.fillRect(px + 8, py + 22, 8, 2);
-      ctx.fillRect(px + 12, py + 14, 2, 8);
-    }
-    if ((x * 7 + y) % 5 === 0) {
-      ctx.fillStyle = "#7a5ed9";
-      ctx.fillRect(px + 23, py + 9, 3, 3);
-      ctx.fillStyle = "#f6d765";
-      ctx.fillRect(px + 26, py + 12, 2, 2);
-    }
-  }
-
-  if (type === "wall") {
-    ctx.fillStyle = "#3f3543";
-    ctx.fillRect(px, py, tile, tile);
-    ctx.fillStyle = "#6d6270";
-    ctx.fillRect(px + 2, py + 2, 28, 12);
-    ctx.fillStyle = "#9c8f9f";
-    ctx.fillRect(px + 4, py + 4, 11, 4);
-    ctx.fillRect(px + 18, py + 7, 9, 3);
-    ctx.fillStyle = "#514656";
-    ctx.fillRect(px, py + 23, tile, 9);
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
-    ctx.fillRect(px + 5, py + 3, 5, 3);
-  }
+function drawFloorTile(px, py, x, y, type) {
+  ctx.fillStyle = "rgba(143, 161, 176, 0.28)";
+  ctx.fillRect(px, py, tile, 1);
+  ctx.fillRect(px, py, 1, tile);
+  ctx.fillStyle = "rgba(33, 196, 232, 0.18)";
+  if ((x + y * 3) % 11 === 0) ctx.fillRect(px + 10, py + 15, 12, 2);
   if (type === "path") {
-    ctx.fillStyle = "#caa96d";
-    ctx.fillRect(px, py + 11, tile, 10);
-    ctx.fillRect(px + 11, py, 10, tile);
-    ctx.fillStyle = "#ead79b";
-    if ((x + y) % 2 === 0) ctx.fillRect(px + 4, py + 14, 7, 3);
-    if ((x + y) % 3 === 0) ctx.fillRect(px + 18, py + 6, 3, 7);
-  }
-  if (type === "archive") {
-    ctx.fillStyle = "#bfa266";
-    ctx.fillRect(px, py, tile, tile);
-    ctx.fillStyle = "#dbc489";
-    ctx.fillRect(px + 2, py + 2, 12, 12);
-    ctx.fillRect(px + 18, py + 18, 12, 12);
-    ctx.fillStyle = "#c8ac70";
-    ctx.fillRect(px + 17, py + 2, 13, 12);
-    ctx.fillRect(px + 2, py + 18, 12, 12);
-  }
-  if (type === "bench") {
-    ctx.fillStyle = "#7d5b3e";
-    for (let i = 0; i < 4; i += 1) ctx.fillRect(px, py + i * 8 + 3, tile, 2);
-    ctx.fillStyle = "#af8b5d";
-    if ((x + y) % 2 === 0) ctx.fillRect(px + 6, py + 7, 20, 3);
-  }
-  if (type === "furnace") {
-    ctx.fillStyle = "#9e6348";
-    ctx.fillRect(px, py, tile, tile);
-    ctx.fillStyle = "#d69a62";
-    ctx.fillRect(px + 2, py + 2, 12, 12);
-    ctx.fillRect(px + 18, py + 18, 12, 12);
-    ctx.fillStyle = "rgba(255, 226, 126, 0.42)";
-    if ((x + y + Math.floor(world.tick / 20)) % 3 === 0) ctx.fillRect(px + 11, py + 11, 10, 10);
+    ctx.fillStyle = "rgba(28, 221, 246, 0.38)";
+    if ((x + y) % 4 === 0) ctx.fillRect(px + 12, py + 2, 3, 26);
   }
   if (type === "channel" || type === "basin") {
-    ctx.fillStyle = type === "channel" ? "#4b98bd" : "#438fab";
-    ctx.fillRect(px, py, tile, tile);
-    ctx.fillStyle = "#438fab";
-    ctx.fillRect(px, py + 24, tile, 8);
-    ctx.fillStyle = "#7ed3dc";
-    if ((x + y + Math.floor(world.tick / 30)) % 3 === 0) ctx.fillRect(px + 5, py + 10, 18, 3);
-    if (type === "channel") {
-      ctx.fillStyle = "#8ee2e6";
-      ctx.fillRect(px + ((world.tick + x * 9) % 18), py + 17, 10, 2);
-      ctx.fillStyle = "#2f806f";
-      if ((x + y) % 2 === 0) ctx.fillRect(px + 1, py + 1, 5, 9);
-    }
-    ctx.fillStyle = "#3f8052";
-    if ((x + y) % 4 === 0) ctx.fillRect(px + 2, py + 24, 5, 8);
+    ctx.fillStyle = "#38cfff";
+    ctx.fillRect(px + 3, py + 5, 26, 20);
+    ctx.fillStyle = "rgba(255,255,255,0.68)";
+    ctx.fillRect(px + ((world.tick + x * 7) % 18), py + 10, 8, 2);
   }
+}
+
+function drawWallTile(px, py, x, y) {
+  ctx.fillStyle = "#d6dce5";
+  ctx.fillRect(px, py, tile, tile);
+  ctx.fillStyle = "#f9fbff";
+  ctx.fillRect(px, py, tile, 8);
+  ctx.fillStyle = "#b7c0cc";
+  ctx.fillRect(px, py + 24, tile, 8);
+  ctx.fillStyle = "#8f9aa8";
+  ctx.fillRect(px, py + 30, tile, 2);
+  ctx.fillStyle = "rgba(0, 198, 255, 0.7)";
+  if ((x + y) % 5 === 0) ctx.fillRect(px + 11, py + 9, 10, 3);
 }
 
 function drawLandmark(site) {
-  if (site.type === "shrine") {
-    drawShrine(site);
-    return;
-  }
-  if (site.type === "dock") {
-    drawDock(site);
-    return;
-  }
-  if (site.type === "observatory") {
-    drawObservatory(site);
-    return;
-  }
-  drawInteriorBuilding(site);
-}
-
-function drawInteriorBuilding(site) {
   const x = site.x * tile;
   const y = site.y * tile;
   const w = site.w * tile;
   const h = site.h * tile;
-  ctx.fillStyle = "rgba(5, 12, 22, 0.34)";
-  ctx.fillRect(x + 6, y + h - 1, w, 10);
-  ctx.fillStyle = "#151b25";
+  if (site.type === "gate") {
+    drawCentralGate(x, y, w, h);
+    return;
+  }
+  if (site.type === "garden") {
+    drawAtrium(x, y, w, h);
+    return;
+  }
+  drawLabRoom(site, x, y, w, h);
+}
+
+function drawLabRoom(site, x, y, w, h) {
+  drawRoomShell(x, y, w, h, site.name);
+  if (site.type === "biotech") {
+    drawReactionTank(x + 26, y + 34, "#8b5cff", 72);
+    drawReactionTank(x + 76, y + 34, "#20df82", 72);
+    drawConsoleWall(x + 136, y + 34, 5);
+    drawHoloBoard(x + 148, y + 34, 92, "leaf");
+    drawBenchCluster(x + 124, y + 126, "#20df82");
+    drawSmallDevices(x + 22, y + 132, 5);
+    return;
+  }
+  if (site.type === "library") {
+    drawServerWall(x + 22, y + 36, 6);
+    drawConsoleWall(x + 160, y + 34, 5);
+    drawLongConsole(x + 120, y + 124, 146);
+    drawHoloGlobe(x + w - 76, y + 86, "#35d7ff", 34);
+    return;
+  }
+  if (site.type === "robotics") {
+    drawRobotArm(x + 48, y + 84);
+    drawRobotArm(x + 116, y + 84);
+    drawSmallDevices(x + 24, y + 38, 6);
+    drawLongConsole(x + 70, y + 150, 156);
+    drawDrone(x + w - 74, y + 118);
+    return;
+  }
+  if (site.type === "energy") {
+    drawReactionTank(x + 30, y + 44, "#9b68ff", 82);
+    drawHoloBoard(x + 112, y + 40, 118, "wave");
+    drawReactionTank(x + w - 58, y + 44, "#23e77e", 82);
+    drawConsoleWall(x + 94, y + 118, 4);
+    return;
+  }
+  if (site.type === "synthesis") {
+    drawReactionTank(x + 28, y + 54, "#a654ff", 86);
+    drawReagentShelves(x + 132, y + 40);
+    drawLongConsole(x + 96, y + 150, 150);
+    drawSmallDevices(x + 34, y + h - 64, 6);
+    return;
+  }
+  if (site.type === "materials") {
+    drawCrystalAnalyzer(x + 118, y + 54);
+    drawReagentShelves(x + w - 96, y + 42);
+    drawLongConsole(x + 124, y + 154, 144);
+    drawSmallDevices(x + 28, y + 58, 5);
+    return;
+  }
+  if (site.type === "hub") {
+    drawHubTable(x + w / 2 - 70, y + h / 2 - 44);
+    drawConsolePod(x + 24, y + 96);
+    drawConsolePod(x + w - 64, y + 96);
+    drawSign(x + w / 2 - 72, y + 10, 144, "COLLABORATION HUB");
+  }
+}
+
+function drawRoomShell(x, y, w, h, label) {
+  ctx.fillStyle = "rgba(75, 92, 110, 0.28)";
+  ctx.fillRect(x + 8, y + h - 2, w - 8, 9);
+  ctx.fillStyle = "#dfe5ec";
   ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = "#4f5868";
+  ctx.fillStyle = "#f8fbff";
+  ctx.fillRect(x + 8, y + 8, w - 16, h - 16);
+  ctx.fillStyle = "#c8d0da";
   ctx.fillRect(x, y, w, 8);
   ctx.fillRect(x, y + h - 8, w, 8);
   ctx.fillRect(x, y, 8, h);
   ctx.fillRect(x + w - 8, y, 8, h);
-  ctx.fillStyle = "#232b37";
-  ctx.fillRect(x + 8, y + 8, w - 16, h - 16);
-  ctx.fillStyle = "#303948";
-  for (let px = x + 16; px < x + w - 14; px += 24) ctx.fillRect(px, y + 13, 2, h - 26);
-  for (let py = y + 18; py < y + h - 14; py += 24) ctx.fillRect(x + 13, py, w - 26, 2);
-  ctx.fillStyle = "rgba(18, 225, 238, 0.82)";
-  ctx.fillRect(x + 12, y + 10, w - 24, 2);
-  ctx.fillRect(x + 12, y + h - 12, w - 24, 2);
-  ctx.fillStyle = "#07151d";
-  ctx.fillRect(x + w / 2 - 56, y + 9, 112, 18);
-  ctx.strokeStyle = "#12e1ee";
+  ctx.fillStyle = "#9aa6b4";
+  ctx.fillRect(x + 8, y + h - 13, w - 16, 5);
+  ctx.fillStyle = "rgba(11, 205, 245, 0.8)";
+  ctx.fillRect(x + 20, y + 13, w - 40, 3);
+  ctx.fillRect(x + 18, y + h - 19, w - 36, 2);
+  for (let px = x + 24; px < x + w - 16; px += 48) drawWallLight(px, y + 14);
+  if (label) drawSign(x + w / 2 - 88, y + 18, 176, label);
+}
+
+function drawSign(x, y, w, label) {
+  ctx.fillStyle = "#06151f";
+  ctx.fillRect(x, y, w, 28);
+  ctx.strokeStyle = "#0de8f4";
   ctx.lineWidth = 2;
-  ctx.strokeRect(x + w / 2 - 56, y + 9, 112, 18);
-  ctx.fillStyle = "#19f3ef";
-  ctx.font = "10px monospace";
+  ctx.strokeRect(x + 2, y + 2, w - 4, 24);
+  ctx.fillStyle = "#16f4ef";
+  ctx.font = "15px monospace";
   ctx.textAlign = "center";
-  ctx.fillText(site.name.toUpperCase().slice(0, 18), x + w / 2, y + 22);
-
-  drawFurniture(site, x, y, w, h);
-  ctx.fillStyle = "#111822";
-  ctx.fillRect(x + w / 2 - 10, y + h - 11, 20, 10);
-  ctx.fillStyle = "#22cff0";
-  ctx.fillRect(x + w / 2 - 8, y + h - 10, 16, 2);
+  ctx.fillText(label.slice(0, 22), x + w / 2, y + 19);
 }
 
-function drawFurniture(site, x, y, w, h) {
-  if (site.type === "lab") {
-    drawConsoleBank(x + 18, y + 34, 4);
-    drawReactionTank(x + w - 58, y + 36, "#25f2ad");
-    drawHoloTable(x + w / 2 - 18, y + h - 48, "#32d7ff");
-    return;
-  }
-  if (site.type === "townHall") {
-    drawHoloTable(x + w / 2 - 20, y + 44, "#36e5ff");
-    drawConsoleBank(x + 18, y + h - 44, 3);
-    return;
-  }
-  if (site.type === "archive") {
-    for (let i = 0; i < 5; i += 1) drawServerRack(x + 16 + i * 28, y + 34);
-    drawHoloGlobe(x + w - 46, y + h - 52, "#31cfff");
-    return;
-  }
-  if (site.type === "cafe") {
-    drawConsoleBank(x + 18, y + 34, 3);
-    drawHoloTable(x + w - 54, y + 54, "#27e8a6");
-    return;
-  }
-  if (site.type === "school") {
-    drawConsoleBank(x + 18, y + 36, 4);
-    drawHoloBoard(x + 20, y + 28, w - 40);
-    return;
-  }
-  if (site.type === "greenhouse") {
-    for (let i = 0; i < 3; i += 1) drawReactionTank(x + 22 + i * 46, y + 36, i % 2 ? "#8d6cff" : "#25f2ad");
-    drawConsoleBank(x + 20, y + h - 42, 4);
-    return;
-  }
-  if (site.type === "market") {
-    for (let i = 0; i < 4; i += 1) drawReagentCrate(x + 18 + i * 34, y + 42, i % 2 ? "#ff965f" : "#62e2ff");
-    drawConsoleBank(x + 18, y + h - 40, 4);
-    return;
-  }
-  if (site.type === "theater") {
-    drawHoloBoard(x + 18, y + 30, w - 36);
-    drawBenchRow(x + 22, y + h - 42, 5);
-    drawBenchRow(x + 22, y + h - 26, 5);
-    return;
-  }
-  drawConsoleBank(x + 18, y + 34, 3);
+function drawWallLight(x, y) {
+  ctx.fillStyle = "#b7c7d5";
+  ctx.fillRect(x, y, 26, 10);
+  ctx.fillStyle = "#31e3ff";
+  ctx.fillRect(x + 4, y + 3, 18, 4);
 }
+
+function drawCentralGate(x, y, w, h) {
+  ctx.fillStyle = "#edf2f6";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#c9d1dc";
+  ctx.fillRect(x + 16, y + 16, w - 32, h - 32);
+  ctx.fillStyle = "#f8fbff";
+  ctx.fillRect(x + 32, y + 22, w - 64, h - 44);
+  ctx.fillStyle = "#778596";
+  ctx.fillRect(x + w / 2 - 32, y + 34, 64, 76);
+  ctx.fillStyle = "#dfe7ef";
+  ctx.fillRect(x + w / 2 - 24, y + 40, 48, 64);
+  ctx.strokeStyle = "#18dbff";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + w / 2 - 20, y + 44, 40, 56);
+  ctx.strokeStyle = "#18dbff";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(x + w / 2, y + 74, 18, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + w / 2, y + 74, 18, 7, Math.PI / 3, 0, Math.PI * 2);
+  ctx.ellipse(x + w / 2, y + 74, 18, 7, -Math.PI / 3, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = "#18dbff";
+  ctx.fillRect(x + w / 2 - 3, y + 71, 6, 6);
+}
+
+function drawAtrium(x, y, w, h) {
+  ctx.fillStyle = "#eef4f2";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#d6dde6";
+  ctx.fillRect(x + 16, y + 12, w - 32, h - 24);
+  ctx.fillStyle = "#f8fbff";
+  ctx.fillRect(x + 36, y + 20, w - 72, h - 40);
+  drawPlanterBox(x + 18, y + 38);
+  drawPlanterBox(x + w - 54, y + 38);
+  drawWaterPanel(x + 28, y + h - 56);
+  drawWaterPanel(x + w - 60, y + h - 56);
+  ctx.fillStyle = "#748290";
+  ctx.fillRect(x + w / 2 - 34, y + 50, 68, 74);
+  ctx.fillStyle = "#dfe7ee";
+  ctx.fillRect(x + w / 2 - 28, y + 56, 56, 62);
+  ctx.strokeStyle = "#19dfff";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x + w / 2 - 22, y + 62, 44, 50);
+}
+
+function drawPlanterBox(x, y) {
+  ctx.fillStyle = "#d8dee7";
+  ctx.fillRect(x, y, 36, 58);
+  ctx.fillStyle = "#5cab60";
+  for (let i = 0; i < 5; i += 1) {
+    ctx.fillRect(x + 8 + (i % 2) * 9, y + 12 + i * 7, 13, 9);
+  }
+}
+
+function drawWaterPanel(x, y) {
+  ctx.fillStyle = "#d8dee7";
+  ctx.fillRect(x, y, 32, 46);
+  ctx.fillStyle = "#55d8ff";
+  ctx.fillRect(x + 6, y + 7, 20, 32);
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.fillRect(x + 10, y + 12, 12, 2);
+}
+
+function drawConsoleWall(x, y, count) {
+  for (let i = 0; i < count; i += 1) {
+    drawScreen(x + i * 34, y + (i % 2) * 4, 28, 34, i % 3 === 0 ? "#21e48a" : "#12cfff");
+  }
+}
+
+function drawServerWall(x, y, count) {
+  for (let i = 0; i < count; i += 1) {
+    const px = x + i * 31;
+    ctx.fillStyle = "#233142";
+    ctx.fillRect(px, y, 24, 72);
+    ctx.fillStyle = "#0b1b29";
+    ctx.fillRect(px + 4, y + 5, 16, 62);
+    for (let j = 0; j < 7; j += 1) {
+      ctx.fillStyle = j % 2 ? "#21e4ff" : "#447bff";
+      ctx.fillRect(px + 7, y + 10 + j * 8, 10, 2);
+    }
+  }
+}
+
+function drawScreen(x, y, w, h, color) {
+  ctx.fillStyle = "#1f2e3d";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#07151f";
+  ctx.fillRect(x + 3, y + 4, w - 6, h - 8);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 7, y + 8, w - 14, 3);
+  ctx.fillRect(x + 7, y + 15, 4, 9);
+  ctx.fillRect(x + 14, y + 18, w - 22, 2);
+}
+
+function drawReactionTank(x, y, color, height = 64) {
+  ctx.fillStyle = "#7d8998";
+  ctx.fillRect(x - 8, y - 4, 42, height + 12);
+  ctx.fillStyle = "#273544";
+  ctx.fillRect(x - 4, y, 34, height + 4);
+  ctx.fillStyle = "rgba(220, 250, 255, 0.62)";
+  ctx.fillRect(x + 2, y + 7, 22, height - 8);
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 5, y + height * 0.42, 16, height * 0.48);
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  ctx.fillRect(x + 8, y + 11, 4, height - 16);
+  ctx.fillStyle = "#10dfff";
+  ctx.fillRect(x, y - 7, 26, 5);
+  ctx.fillRect(x, y + height + 4, 26, 5);
+}
+
+function drawLongConsole(x, y, w) {
+  ctx.fillStyle = "#8f99a8";
+  ctx.fillRect(x, y + 26, w, 18);
+  ctx.fillStyle = "#f4f7fb";
+  ctx.fillRect(x + 6, y + 6, w - 12, 30);
+  ctx.fillStyle = "#273747";
+  ctx.fillRect(x + 10, y + 10, w - 20, 20);
+  for (let i = 0; i < Math.floor(w / 32); i += 1) {
+    ctx.fillStyle = i % 2 ? "#18dfff" : "#815fff";
+    ctx.fillRect(x + 18 + i * 28, y + 15, 18, 4);
+  }
+}
+
+function drawBenchCluster(x, y, color) {
+  drawLongConsole(x, y, 116);
+  drawScreen(x + 10, y - 42, 34, 38, color);
+  drawHoloTable(x + 64, y - 20, "#2fd8ff");
+}
+
+function drawSmallDevices(x, y, count) {
+  for (let i = 0; i < count; i += 1) {
+    const px = x + (i % 3) * 32;
+    const py = y + Math.floor(i / 3) * 34;
+    ctx.fillStyle = "#9aa5b2";
+    ctx.fillRect(px, py, 22, 24);
+    ctx.fillStyle = "#1e2d3b";
+    ctx.fillRect(px + 4, py + 4, 14, 14);
+    ctx.fillStyle = i % 2 ? "#24e6ff" : "#f5b947";
+    ctx.fillRect(px + 8, py + 8, 6, 6);
+  }
+}
+
+function drawRobotArm(x, y) {
+  ctx.strokeStyle = "#f4ae2f";
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x, y + 42);
+  ctx.lineTo(x + 22, y + 18);
+  ctx.lineTo(x + 48, y + 28);
+  ctx.stroke();
+  ctx.fillStyle = "#5b6675";
+  ctx.fillRect(x - 12, y + 40, 24, 18);
+  ctx.fillStyle = "#24dfff";
+  ctx.beginPath();
+  ctx.arc(x + 52, y + 30, 9, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawDrone(x, y) {
+  ctx.fillStyle = "#dce6ef";
+  ctx.fillRect(x, y, 44, 18);
+  ctx.fillStyle = "#2bdcff";
+  ctx.fillRect(x + 9, y + 5, 26, 8);
+  ctx.fillStyle = "#6f7a88";
+  ctx.fillRect(x - 8, y + 4, 8, 8);
+  ctx.fillRect(x + 44, y + 4, 8, 8);
+}
+
+function drawCrystalAnalyzer(x, y) {
+  drawScreen(x, y, 72, 58, "#20dfff");
+  ctx.fillStyle = "#53e4ff";
+  ctx.beginPath();
+  ctx.moveTo(x + 36, y + 8);
+  ctx.lineTo(x + 54, y + 30);
+  ctx.lineTo(x + 36, y + 50);
+  ctx.lineTo(x + 18, y + 30);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,0.62)";
+  ctx.fillRect(x + 33, y + 16, 5, 26);
+}
+
+function drawReagentShelves(x, y) {
+  ctx.fillStyle = "#7c8796";
+  ctx.fillRect(x, y, 82, 80);
+  ctx.fillStyle = "#f7f9fc";
+  ctx.fillRect(x + 5, y + 5, 72, 70);
+  for (let row = 0; row < 3; row += 1) {
+    for (let col = 0; col < 5; col += 1) {
+      ctx.fillStyle = ["#ff8f5a", "#5be7ff", "#22e38b", "#8d67ff", "#f6c44a"][(row + col) % 5];
+      ctx.fillRect(x + 12 + col * 12, y + 14 + row * 18, 7, 13);
+    }
+  }
+}
+
+function drawHubTable(x, y) {
+  ctx.fillStyle = "#7d8998";
+  ctx.fillRect(x, y + 56, 140, 34);
+  ctx.fillStyle = "#f5f8fb";
+  ctx.fillRect(x + 8, y + 24, 124, 48);
+  ctx.strokeStyle = "#19dfff";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 18, y + 32, 104, 30);
+  ctx.fillStyle = "rgba(29, 209, 255, 0.44)";
+  ctx.beginPath();
+  ctx.arc(x + 70, y + 34, 30, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#19dfff";
+  ctx.fillRect(x + 64, y + 2, 12, 48);
+}
+
+function drawConsolePod(x, y) {
+  drawScreen(x, y, 40, 48, "#15dfff");
+  ctx.fillStyle = "#8d98a7";
+  ctx.fillRect(x - 6, y + 48, 52, 10);
+}
+
+function drawHouse() {}
 
 function drawConsoleBank(x, y, count) {
   for (let i = 0; i < count; i += 1) {
@@ -1228,21 +1371,6 @@ function drawServerRack(x, y) {
     ctx.fillStyle = i % 2 ? "#19e8f4" : "#326bff";
     ctx.fillRect(x + 5, y + 6 + i * 7, 8, 2);
   }
-}
-
-function drawReactionTank(x, y, color) {
-  ctx.fillStyle = "#0d1420";
-  ctx.fillRect(x - 5, y + 4, 34, 48);
-  ctx.fillStyle = "#526071";
-  ctx.fillRect(x, y, 24, 54);
-  ctx.fillStyle = "rgba(210, 247, 255, 0.35)";
-  ctx.fillRect(x + 4, y + 6, 16, 40);
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 6, y + 18, 12, 25);
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.fillRect(x + 8, y + 9, 4, 29);
-  ctx.fillStyle = "#18e4ff";
-  ctx.fillRect(x + 2, y - 4, 20, 4);
 }
 
 function drawHoloTable(x, y, color) {
@@ -1287,324 +1415,110 @@ function drawReagentCrate(x, y, color) {
   ctx.fillRect(x + 7, y + 7, 10, 10);
 }
 
-function drawCounters(x, y, w, h, color) {
-  ctx.fillStyle = "#5c4638";
-  ctx.fillRect(x + 14, y + 24, w - 28, 9);
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 16, y + 22, w - 32, 8);
-  ctx.fillStyle = "#f7e7ad";
-  ctx.fillRect(x + 26, y + 20, 14, 5);
-}
-
-function drawTable(x, y, top, leg) {
-  ctx.fillStyle = "#5c4638";
-  ctx.fillRect(x - 2, y + 2, 32, 18);
-  ctx.fillStyle = top;
-  ctx.fillRect(x, y, 28, 16);
-  ctx.fillStyle = leg;
-  ctx.fillRect(x + 5, y + 16, 4, 5);
-  ctx.fillRect(x + 20, y + 16, 4, 5);
-}
-
-function drawBenchRow(x, y, count) {
-  for (let i = 0; i < count; i += 1) {
-    ctx.fillStyle = "#76553c";
-    ctx.fillRect(x + i * 26, y, 18, 7);
-    ctx.fillStyle = "#b88752";
-    ctx.fillRect(x + i * 26, y - 2, 18, 5);
-  }
-}
-
-function drawShelf(x, y, color) {
-  ctx.fillStyle = "#5c4638";
-  ctx.fillRect(x - 2, y - 2, 16, 36);
-  ctx.fillStyle = color;
-  ctx.fillRect(x, y, 12, 32);
-  ctx.fillStyle = "#f4d25b";
-  ctx.fillRect(x + 2, y + 5, 8, 3);
-  ctx.fillStyle = "#d85d63";
-  ctx.fillRect(x + 2, y + 14, 8, 3);
-  ctx.fillStyle = "#6aa86c";
-  ctx.fillRect(x + 2, y + 23, 8, 3);
-}
-
-function drawPlanter(x, y) {
-  ctx.fillStyle = "#79523c";
-  ctx.fillRect(x, y + 9, 28, 8);
-  ctx.fillStyle = "#6aa86c";
-  ctx.fillRect(x + 4, y + 4, 4, 7);
-  ctx.fillRect(x + 12, y + 1, 4, 10);
-  ctx.fillRect(x + 20, y + 5, 4, 6);
-}
-
-function drawStall(x, y, color) {
-  ctx.fillStyle = "#5c4638";
-  ctx.fillRect(x, y, 26, 28);
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 2, y, 22, 8);
-  ctx.fillStyle = "#d8b36d";
-  ctx.fillRect(x + 3, y + 14, 20, 10);
-}
-
-function drawDock(site) {
-  const x = site.x * tile;
-  const y = site.y * tile;
-  ctx.fillStyle = "#6e4b35";
-  ctx.fillRect(x - 4, y + 20, site.w * tile + 8, 11);
-  ctx.fillStyle = "#b88752";
-  for (let i = 0; i < site.w; i += 1) ctx.fillRect(x + i * tile + 2, y + 18, 25, 13);
-  ctx.fillStyle = "#6e4b35";
-  ctx.fillRect(x + 8, y + 7, 5, 28);
-  ctx.fillRect(x + site.w * tile - 14, y + 7, 5, 28);
-  ctx.fillStyle = "#e8e0bb";
-  ctx.fillRect(x + 34, y + 7, 2, 18);
-  ctx.fillStyle = "#2c2740";
-  ctx.fillRect(x + 35, y + 23, 8, 2);
-}
-
-function drawShrine(site) {
-  const x = site.x * tile;
-  const y = site.y * tile;
-  ctx.fillStyle = "rgba(48,42,44,0.18)";
-  ctx.fillRect(x + 4, y + 74, 60, 8);
-  ctx.fillStyle = "#6b3f35";
-  ctx.fillRect(x + 4, y + 20, 56, 10);
-  ctx.fillStyle = site.roof;
-  ctx.fillRect(x, y + 13, 64, 10);
-  ctx.fillStyle = "#7a4936";
-  ctx.fillRect(x + 8, y + 31, 8, 43);
-  ctx.fillRect(x + 48, y + 31, 8, 43);
-  ctx.fillStyle = site.wall;
-  ctx.fillRect(x + 19, y + 38, 26, 34);
-  ctx.fillStyle = "#d85d63";
-  ctx.fillRect(x + 15, y + 34, 34, 8);
-  ctx.fillStyle = "#f4ead0";
-  ctx.fillRect(x + 28, y + 47, 8, 16);
-  ctx.fillStyle = "#73a85d";
-  ctx.fillRect(x + 24, y + 72, 16, 5);
-}
-
-function drawObservatory(site) {
-  const x = site.x * tile;
-  const y = site.y * tile;
-  ctx.fillStyle = "rgba(48,42,44,0.2)";
-  ctx.fillRect(x + 3, y + 60, 60, 7);
-  ctx.fillStyle = "#4d5660";
-  ctx.fillRect(x + 9, y + 29, 46, 34);
-  ctx.fillStyle = site.wall;
-  ctx.fillRect(x + 12, y + 32, 40, 31);
-  ctx.fillStyle = site.roof;
-  ctx.beginPath();
-  ctx.arc(x + 32, y + 31, 22, Math.PI, 0);
-  ctx.lineTo(x + 54, y + 31);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = "#d9f0f3";
-  ctx.fillRect(x + 25, y + 17, 14, 9);
-  ctx.fillStyle = "#5b4635";
-  ctx.fillRect(x + 27, y + 48, 10, 15);
-}
-
-function drawHouse(house) {
-  const x = house.x * tile;
-  const y = house.y * tile;
-  const w = house.w * tile;
-  const h = house.h * tile;
-
-  ctx.fillStyle = "rgba(48,42,44,0.18)";
-  ctx.fillRect(x + 6, y + h - 2, w - 4, 8);
-  ctx.fillStyle = "#5b4635";
-  ctx.fillRect(x, y, w, h);
-  ctx.fillStyle = house.wall;
-  ctx.fillRect(x + 4, y + 4, w - 8, h - 8);
-  ctx.fillStyle = "#d8ad72";
-  ctx.fillRect(x + 9, y + 14, w - 18, h - 24);
-  ctx.fillStyle = house.roof;
-  ctx.fillRect(x - 2, y - 6, w + 4, 12);
-  ctx.fillStyle = shade(house.roof, -22);
-  ctx.fillRect(x - 2, y + 3, w + 4, 4);
-  ctx.fillStyle = "#7fb0c4";
-  ctx.fillRect(x + 10, y + 20, 10, 9);
-  ctx.fillStyle = "#f6f0c9";
-  ctx.fillRect(x + 12, y + 22, 3, 3);
-  drawTable(x + 43, y + 34, "#f0d38d", "#7b573d");
-  drawShelf(x + w - 26, y + 24, "#b88752");
-  ctx.fillStyle = "#8b6544";
-  ctx.fillRect(x + w / 2 - 18, y + h - 18, 36, 16);
-  ctx.fillStyle = "#d7aa72";
-  ctx.fillRect(x + w / 2 - 13, y + h - 15, 26, 13);
-  ctx.fillStyle = "#f5d56c";
-  ctx.fillRect(x + w / 2 + 10, y + h - 10, 3, 3);
-}
-
 function drawPlant(plant) {
   const x = Math.round(plant.x);
   const y = Math.round(plant.y);
-  const colors = {
-    emberglass: plant.bloom ? "#ff915f" : "#c94d45",
-    moonsalt: plant.bloom ? "#dfe7ff" : "#8da1cf",
-    verdigris: plant.bloom ? "#58d08c" : "#4e9f75"
-  };
-  ctx.fillStyle = "rgba(35, 31, 42, 0.24)";
-  ctx.fillRect(x - 9, y + 8, 18, 5);
-  ctx.fillStyle = "#3d3442";
-  ctx.fillRect(x - 7, y - 8, 14, 20);
-  ctx.fillStyle = "#d7f4f2";
-  ctx.fillRect(x - 5, y - 6, 10, 16);
-  ctx.fillStyle = colors[plant.species];
-  const size = 5 + Math.floor(plant.age * 7);
-  ctx.fillRect(x - 4, y + 4 - size, 8, size);
-  ctx.fillStyle = "rgba(255,255,255,0.52)";
-  ctx.fillRect(x - 3, y - 4, 2, 8);
-  ctx.fillStyle = "#3d3442";
-  ctx.fillRect(x - 6, y - 11, 12, 4);
-  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  const liquid = {
+    emberglass: plant.bloom ? "#ff8f5a" : "#ff623f",
+    moonsalt: plant.bloom ? "#dfe9ff" : "#8daeff",
+    verdigris: plant.bloom ? "#43e98e" : "#27b976"
+  }[plant.species];
+  ctx.fillStyle = "rgba(73, 92, 112, 0.28)";
+  ctx.fillRect(x - 10, y + 10, 20, 5);
+  ctx.fillStyle = "#73808f";
+  ctx.fillRect(x - 8, y - 10, 16, 24);
+  ctx.fillStyle = "#e7fbff";
+  ctx.fillRect(x - 5, y - 7, 10, 18);
+  ctx.fillStyle = liquid;
+  ctx.fillRect(x - 4, y + 3 - Math.floor(plant.age * 12), 8, 11 + Math.floor(plant.age * 7));
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.fillRect(x - 2, y - 5, 2, 11);
+  ctx.fillStyle = "#4d5a68";
+  ctx.fillRect(x - 6, y - 14, 12, 5);
   if (plant.bloom) {
-    ctx.fillRect(x - 10, y - 18, 4, 4);
-    ctx.fillRect(x + 7, y - 16, 3, 3);
-    ctx.fillRect(x - 1, y - 21, 2, 2);
+    ctx.fillStyle = liquid;
+    ctx.fillRect(x - 12, y - 21, 4, 4);
+    ctx.fillRect(x + 8, y - 18, 3, 3);
+    ctx.fillRect(x - 1, y - 25, 2, 2);
   }
 }
 
 function drawArtifact(artifact) {
   const x = Math.round(artifact.x);
   const y = Math.round(artifact.y);
-  if (artifact.type === "blackboard") {
-    ctx.fillStyle = "#5f4b3b";
-    ctx.fillRect(x - 18, y - 18, 36, 26);
-    ctx.fillStyle = "#345d4d";
-    ctx.fillRect(x - 15, y - 15, 30, 18);
-    ctx.fillStyle = "#f8f1ca";
-    ctx.fillRect(x - 6, y - 9, 12, 3);
-  } else if (artifact.type === "map") {
-    ctx.fillStyle = "#f4df9d";
-    ctx.fillRect(x - 13, y - 10, 26, 20);
-    ctx.fillStyle = "#9f7b43";
-    ctx.fillRect(x - 7, y - 2, 14, 2);
-  } else if (artifact.type === "shrine") {
-    ctx.fillStyle = "#ce5f58";
-    ctx.fillRect(x - 13, y - 14, 26, 8);
-    ctx.fillStyle = "#f3d06a";
-    ctx.fillRect(x - 8, y - 5, 16, 15);
-  } else {
-    ctx.fillStyle = artifact.type === "charm" ? "#e56f76" : "#fff0b7";
-    ctx.fillRect(x - 7, y - 8, 14, 14);
-    ctx.fillStyle = "#69513b";
-    ctx.fillRect(x - 3, y - 3, 6, 2);
-  }
+  ctx.fillStyle = "#203040";
+  ctx.fillRect(x - 8, y - 8, 16, 16);
+  ctx.fillStyle = artifact.type === "note" ? "#1de1ff" : "#8b6cff";
+  ctx.fillRect(x - 5, y - 5, 10, 10);
+  ctx.fillStyle = "rgba(255,255,255,0.65)";
+  ctx.fillRect(x - 3, y - 3, 4, 2);
 }
 
 function drawAgent(agent) {
   const x = Math.round(agent.x);
   const y = Math.round(agent.y);
-  const outfit = agent.color;
-  ctx.fillStyle = "rgba(48,42,44,0.25)";
-  ctx.fillRect(x - 10, y + 12, 20, 5);
-  ctx.fillStyle = "#2d2632";
-  ctx.fillRect(x - 9, y - 4, 18, 18);
-  ctx.fillStyle = outfit;
-  ctx.fillRect(x - 7, y - 2, 14, 15);
-  ctx.fillStyle = shade(outfit, 18);
-  ctx.fillRect(x - 5, y, 10, 4);
-  ctx.fillStyle = shade(outfit, -24);
+  const hair = agent.cap;
+  ctx.fillStyle = "rgba(67, 82, 96, 0.32)";
+  ctx.fillRect(x - 10, y + 13, 20, 5);
+  ctx.fillStyle = "#263446";
+  ctx.fillRect(x - 8, y + 4, 6, 11);
+  ctx.fillRect(x + 2, y + 4, 6, 11);
+  ctx.fillStyle = "#1e2b3c";
+  ctx.fillRect(x - 8, y + 14, 6, 3);
+  ctx.fillRect(x + 2, y + 14, 6, 3);
+  ctx.fillStyle = "#f7fbff";
+  ctx.fillRect(x - 9, y - 3, 18, 16);
+  ctx.fillStyle = "#dce8ef";
   ctx.fillRect(x - 7, y + 8, 5, 6);
   ctx.fillRect(x + 2, y + 8, 5, 6);
-  ctx.fillStyle = "#3f3140";
-  ctx.fillRect(x - 6, y + 13, 5, 3);
-  ctx.fillRect(x + 1, y + 13, 5, 3);
-  ctx.fillStyle = "#2d2632";
-  ctx.fillRect(x - 7, y - 15, 14, 13);
+  ctx.fillStyle = agent.color;
+  ctx.fillRect(x - 5, y + 1, 10, 4);
   ctx.fillStyle = agent.skin;
-  ctx.fillRect(x - 6, y - 15, 12, 12);
+  ctx.fillRect(x - 7, y - 16, 14, 13);
   ctx.fillStyle = shade(agent.skin, -18);
-  ctx.fillRect(x - 6, y - 5, 12, 2);
-
-  ctx.fillStyle = "#3f3140";
+  ctx.fillRect(x - 7, y - 6, 14, 2);
+  drawScientistHair(agent, x, y, hair);
+  ctx.fillStyle = "#243044";
   if (agent.direction === "left") {
-    ctx.fillRect(x - 5, y - 11, 2, 2);
-    ctx.fillStyle = shade(agent.skin, -18);
-    ctx.fillRect(x - 7, y - 8, 2, 3);
+    ctx.fillRect(x - 5, y - 12, 2, 2);
   } else if (agent.direction === "right") {
-    ctx.fillRect(x + 3, y - 11, 2, 2);
-    ctx.fillStyle = shade(agent.skin, -18);
-    ctx.fillRect(x + 5, y - 8, 2, 3);
+    ctx.fillRect(x + 3, y - 12, 2, 2);
   } else if (agent.direction === "up") {
-    ctx.fillStyle = shade(agent.skin, -24);
-    ctx.fillRect(x - 5, y - 12, 10, 3);
+    ctx.fillRect(x - 5, y - 14, 10, 3);
   } else {
-    ctx.fillRect(x - 4, y - 11, 2, 2);
-    ctx.fillRect(x + 3, y - 11, 2, 2);
-    ctx.fillStyle = "#b85d63";
-    ctx.fillRect(x - 1, y - 7, 2, 1);
+    ctx.fillRect(x - 4, y - 12, 2, 2);
+    ctx.fillRect(x + 3, y - 12, 2, 2);
   }
-
-  drawMushroomCap(agent, x, y);
-
-  if (agent.role === "glass scribe") {
-    ctx.fillStyle = "#f7e6a5";
-    ctx.fillRect(x + 8, y - 8, 7, 9);
-  }
-  if (agent.role === "formula singer") {
-    ctx.fillStyle = "#2c2740";
-    ctx.fillRect(x + 9, y - 14, 3, 8);
-    ctx.fillRect(x + 12, y - 14, 5, 3);
-  }
-
-  if (agent.speech && world.tick < agent.speechUntil) drawSpeech(x, y - 24, agent.speech);
+  ctx.fillStyle = "#35dfff";
+  if (agent.role.includes("scribe")) ctx.fillRect(x + 8, y - 6, 7, 9);
+  if (agent.role.includes("watcher")) ctx.fillRect(x - 14, y - 4, 6, 11);
+  if (agent.speech && world.tick < agent.speechUntil) drawSpeech(x, y - 28, agent.speech);
 }
 
-function drawMushroomCap(agent, x, y) {
-  ctx.fillStyle = "#2d2632";
-  if (agent.capShape === "wide") {
-    ctx.fillRect(x - 13, y - 23, 26, 10);
-    ctx.fillRect(x - 9, y - 27, 18, 5);
-  } else if (agent.capShape === "point") {
-    ctx.beginPath();
-    ctx.moveTo(x - 12, y - 13);
-    ctx.lineTo(x, y - 30);
-    ctx.lineTo(x + 12, y - 13);
-    ctx.closePath();
-    ctx.fill();
-  } else if (agent.capShape === "flat") {
-    ctx.fillRect(x - 11, y - 23, 22, 8);
-    ctx.fillRect(x - 7, y - 27, 14, 4);
+function drawScientistHair(agent, x, y, hair) {
+  ctx.fillStyle = "#1f2939";
+  ctx.fillRect(x - 8, y - 20, 16, 7);
+  ctx.fillStyle = hair;
+  const style = agent.id % 5;
+  if (style === 0) {
+    ctx.fillRect(x - 8, y - 20, 16, 6);
+    ctx.fillRect(x - 10, y - 17, 6, 8);
+  } else if (style === 1) {
+    ctx.fillRect(x - 9, y - 22, 18, 8);
+    ctx.fillRect(x + 5, y - 17, 5, 9);
+  } else if (style === 2) {
+    ctx.fillRect(x - 7, y - 23, 14, 7);
+    ctx.fillRect(x - 4, y - 25, 8, 4);
+  } else if (style === 3) {
+    ctx.fillRect(x - 8, y - 21, 16, 8);
+    ctx.fillRect(x - 6, y - 24, 12, 4);
   } else {
-    ctx.fillRect(x - 11, y - 23, 22, 9);
-    ctx.fillRect(x - 8, y - 27, 16, 6);
+    ctx.fillRect(x - 10, y - 20, 20, 6);
+    ctx.fillRect(x - 8, y - 16, 5, 7);
+    ctx.fillRect(x + 3, y - 16, 5, 7);
   }
-
-  ctx.fillStyle = agent.cap;
-  if (agent.capShape === "wide") {
-    ctx.fillRect(x - 12, y - 22, 24, 8);
-    ctx.fillRect(x - 8, y - 26, 16, 4);
-  } else if (agent.capShape === "point") {
-    ctx.beginPath();
-    ctx.moveTo(x - 10, y - 14);
-    ctx.lineTo(x, y - 28);
-    ctx.lineTo(x + 10, y - 14);
-    ctx.closePath();
-    ctx.fill();
-  } else if (agent.capShape === "flat") {
-    ctx.fillRect(x - 10, y - 22, 20, 6);
-    ctx.fillRect(x - 6, y - 25, 12, 3);
-  } else {
-    ctx.fillRect(x - 10, y - 22, 20, 7);
-    ctx.fillRect(x - 7, y - 26, 14, 5);
-  }
-
-  ctx.fillStyle = shade(agent.cap, 34);
-  ctx.fillRect(x - 6, y - 23, 5, 3);
-  ctx.fillStyle = "#f7edcf";
-  for (let i = 0; i < agent.spots; i += 1) {
-    const sx = x - 8 + ((i * 6 + agent.id * 3) % 17);
-    const sy = y - 23 + ((i * 5 + agent.id) % 7);
-    ctx.fillRect(sx, sy, 3, 3);
-  }
-  ctx.fillStyle = "#4d8b62";
-  if (agent.id % 3 === 0) {
-    ctx.fillRect(x - 1, y - 30, 2, 5);
-    ctx.fillRect(x + 1, y - 31, 5, 2);
-  }
+  ctx.fillStyle = "rgba(255,255,255,0.45)";
+  ctx.fillRect(x - 4, y - 21, 4, 2);
 }
 
 function shade(hex, amount) {
